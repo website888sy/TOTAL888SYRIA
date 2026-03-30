@@ -406,6 +406,25 @@
         place-items: center;
       }
 
+      .thumb,
+      .cart-thumb {
+        position: relative;
+      }
+
+      .img-fail-overlay {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 10px;
+        text-align: center;
+        font-size: 12px;
+        font-weight: 900;
+        color: #7f1d1d;
+        background: rgba(255, 255, 255, 0.82);
+        backdrop-filter: blur(2px);
+      }
+
       .thumb img {
         width: 100%;
         height: 100%;
@@ -1653,6 +1672,13 @@
           </div>
           <div style="padding:14px;display:grid;gap:14px">
             <div class="status" id="checkoutStatus" aria-hidden="true"></div>
+            <div class="notice" id="checkoutDelayNote">الطلب يحتاج من 2 يوم إلى 10 أيام على الأكثر للإرسال بسبب ضغط طلبات</div>
+            <div class="panel-sub" style="font-weight:900;color:var(--promo)">نحثكم على الاختيار WADFOW فهي الأسرع إرسالاً</div>
+            <div class="panel-sub" style="font-weight:900">لسنا مسؤولين عن عدم قراءة قسم "أشيع الأسئلة" و "تفاصيل الشحن"</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;max-width:520px">
+              <button class="btn btn-ghost" id="checkoutFaqBtn" type="button" style="flex:1">الأشيع اسئلة</button>
+              <button class="btn btn-ghost" id="checkoutShippingBtn" type="button" style="flex:1">تفاصيل الشحن</button>
+            </div>
             <form id="checkoutForm" style="display:grid;gap:10px;max-width:520px">
               <label style="display:grid;gap:6px">
                 <span style="font-weight:800">اسم ثلاثي</span>
@@ -1660,20 +1686,14 @@
               </label>
               <label style="display:grid;gap:6px">
                 <span style="font-weight:800">المحافظة</span>
-                <select id="govInput" required style="padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface)">
-                  <option value="">اختر المحافظة</option>
-                  <option value="دمشق">دمشق</option>
-                  <option value="حمص">حمص</option>
-                  <option value="حماة">حماة</option>
-                  <option value="اللاذقية">اللاذقية</option>
-                  <option value="طرطوس">طرطوس</option>
-                  <option value="إدلب">إدلب</option>
-                  <option value="درعا">درعا</option>
-                  <option value="السويداء">السويداء</option>
-                  <option value="الحسكة">الحسكة</option>
-                  <option value="دير الزور">دير الزور</option>
-                  <option value="الرقة">الرقة</option>
-                </select>
+                <input
+                  id="govInput"
+                  type="text"
+                  autocomplete="address-level1"
+                  required
+                  placeholder="اكتب المحافظة"
+                  style="padding:12px;border:1px solid var(--border);border-radius:12px"
+                />
               </label>
               <label style="display:grid;gap:6px">
                 <span style="font-weight:800">رقم الهاتف</span>
@@ -1842,6 +1862,86 @@
           `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e9f6f5"/><stop offset="1" stop-color="#ffffff"/></linearGradient></defs><rect width="100%" height="100%" fill="url(#g)"/><g fill="#0aa3a3" opacity="0.7"><circle cx="130" cy="110" r="18"/><circle cx="190" cy="110" r="10"/><circle cx="170" cy="150" r="12"/></g><text x="50%" y="52%" font-size="26" text-anchor="middle" fill="#4b6b69" font-family="Arial">TOTAL</text><text x="50%" y="58%" font-size="14" text-anchor="middle" fill="#4b6b69" font-family="Arial">TOOLS</text></svg>`
         );
 
+      function wireImageRetry() {
+        const MAX_RETRIES = 2;
+        const FAIL_MSG = "فشل تحميل بسبب ضعف الاتصال";
+
+        const removeOverlay = (img) => {
+          const parent = img.parentElement;
+          if (!parent) return;
+          const existing = parent.querySelector(":scope > .img-fail-overlay");
+          if (existing instanceof HTMLElement) existing.remove();
+        };
+
+        const addOverlay = (img, msg) => {
+          const parent = img.parentElement;
+          if (!parent) return;
+          const existing = parent.querySelector(":scope > .img-fail-overlay");
+          if (existing instanceof HTMLElement) existing.remove();
+          const el = document.createElement("div");
+          el.className = "img-fail-overlay";
+          el.textContent = msg;
+          parent.appendChild(el);
+        };
+
+        const shouldHandle = (img) => {
+          const src = String(img.currentSrc || img.src || "");
+          if (!src) return false;
+          if (src.startsWith("data:image/")) return false;
+          if (src === PLACEHOLDER_IMG) return false;
+          return true;
+        };
+
+        const onImgError = (img) => {
+          if (!shouldHandle(img)) return;
+          if (!img.dataset.origSrc) img.dataset.origSrc = String(img.currentSrc || img.src || "");
+          const orig = String(img.dataset.origSrc || "");
+          if (!orig || orig === PLACEHOLDER_IMG) return;
+
+          const retryCount = Math.max(0, Math.min(99, Number(img.dataset.retryCount) || 0));
+          if (retryCount < MAX_RETRIES) {
+            img.dataset.retryCount = String(retryCount + 1);
+            const delay = 900 + retryCount * 1200;
+            window.setTimeout(() => {
+              const bust = `${orig}${orig.includes("?") ? "&" : "?"}retry=${Date.now()}`;
+              img.src = bust;
+            }, delay);
+            return;
+          }
+
+          if (img.dataset.failedFinal !== "1") {
+            img.dataset.failedFinal = "1";
+            addOverlay(img, FAIL_MSG);
+          }
+          img.alt = FAIL_MSG;
+          img.title = FAIL_MSG;
+          img.src = PLACEHOLDER_IMG;
+        };
+
+        document.addEventListener(
+          "error",
+          (e) => {
+            const t = e.target;
+            if (!(t instanceof HTMLImageElement)) return;
+            onImgError(t);
+            e.stopImmediatePropagation();
+          },
+          true
+        );
+
+        document.addEventListener(
+          "load",
+          (e) => {
+            const t = e.target;
+            if (!(t instanceof HTMLImageElement)) return;
+            if (t.dataset.failedFinal === "1") return;
+            if (t.dataset.retryCount) t.dataset.retryCount = "0";
+            removeOverlay(t);
+          },
+          true
+        );
+      }
+
       const els = {
         appRoot: document.getElementById("appRoot"),
         promoBar: document.getElementById("promoBar"),
@@ -1886,6 +1986,8 @@
         checkoutView: document.getElementById("checkoutView"),
         checkoutMeta: document.getElementById("checkoutMeta"),
         checkoutStatus: document.getElementById("checkoutStatus"),
+        checkoutFaqBtn: document.getElementById("checkoutFaqBtn"),
+        checkoutShippingBtn: document.getElementById("checkoutShippingBtn"),
         checkoutForm: document.getElementById("checkoutForm"),
         fullNameInput: document.getElementById("fullNameInput"),
         govInput: document.getElementById("govInput"),
@@ -3869,6 +3971,8 @@
         els.shipDetailsBtn.addEventListener("click", () => setHash(`info=${encodeURIComponent("shipping")}`));
         els.masaratBranchesBtn.addEventListener("click", () => setHash(`info=${encodeURIComponent("masarat_branches")}`));
         els.qadmousBranchesBtn.addEventListener("click", () => setHash(`info=${encodeURIComponent("qadmous_branches")}`));
+        if (els.checkoutFaqBtn) els.checkoutFaqBtn.addEventListener("click", () => setHash(`info=${encodeURIComponent("faq")}`));
+        if (els.checkoutShippingBtn) els.checkoutShippingBtn.addEventListener("click", () => setHash(`info=${encodeURIComponent("shipping")}`));
 
         const syncCurrency = (source) => {
           if (source === "USD") {
@@ -4169,6 +4273,7 @@
       try {
         loadCustomerDraft();
       } catch {}
+      wireImageRetry();
       wireEvents();
       try {
         const savedView = String(localStorage.getItem("hjy_view_mode_v1") ?? "").trim();
