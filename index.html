@@ -1872,13 +1872,51 @@
 
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
     <script>
+      const reportBootError = (msg) => {
+        const hint = document.getElementById("hint");
+        const status = document.getElementById("status");
+        if (hint) hint.textContent = "فشل التحميل";
+        if (status) {
+          status.style.display = "";
+          status.textContent = String(msg ?? "حدث خطأ غير معروف");
+          status.setAttribute("data-error", "1");
+        }
+      };
+
+      window.addEventListener("error", (e) => {
+        try {
+          reportBootError(`خطأ بالصفحة: ${String(e?.message ?? "").trim() || "غير معروف"}`);
+        } catch {}
+      });
+      window.addEventListener("unhandledrejection", (e) => {
+        try {
+          const r = e?.reason;
+          const msg = r && typeof r === "object" && "message" in r ? String(r.message ?? "") : String(r ?? "");
+          reportBootError(`فشل التحميل: ${msg || "Promise rejection"}`);
+        } catch {}
+      });
+
       const CONFIG = {
-        CSV_URLS: ["products.csv", "../products.csv"],
-        HOME_PRODUCTS_URLS: ["home.csv", "../home.csv", "home", "../home"],
-        ABOUT_URLS: ["about.csv", "../about.csv", "about", "../about"],
+        CSV_URLS: ["products.csv", "src/products.csv", "../products.csv"],
+        HOME_PRODUCTS_URLS: ["home.csv", "src/home.csv", "../home.csv", "home", "src/home", "../home"],
+        ABOUT_URLS: ["about.csv", "src/about.csv", "../about.csv", "about", "src/about", "../about"],
         OUT_OF_STOCK_URLS_BY_CATEGORY: {
-          TOTAL: ["TOTAL_out_of_stock.csv", "../TOTAL_out_of_stock.csv", "TOTAL_out_of_stock", "../TOTAL_out_of_stock"],
-          WADFOW: ["WADFOW_out_of_stock.csv", "../WADFOW_out_of_stock.csv", "WADFOW_out_of_stock", "../WADFOW_out_of_stock"],
+          TOTAL: [
+            "TOTAL_out_of_stock.csv",
+            "src/TOTAL_out_of_stock.csv",
+            "../TOTAL_out_of_stock.csv",
+            "TOTAL_out_of_stock",
+            "src/TOTAL_out_of_stock",
+            "../TOTAL_out_of_stock",
+          ],
+          WADFOW: [
+            "WADFOW_out_of_stock.csv",
+            "src/WADFOW_out_of_stock.csv",
+            "../WADFOW_out_of_stock.csv",
+            "WADFOW_out_of_stock",
+            "src/WADFOW_out_of_stock",
+            "../WADFOW_out_of_stock",
+          ],
         },
         ITEMS_PER_PAGE: 20,
         MARKUP_RATE: 0.15,
@@ -5032,10 +5070,14 @@
       updateCategoriesToggleLabel();
       updateFooterLinksVisibility();
       window.addEventListener("hashchange", applyHashRoute);
-      loadProducts().then(() => {
-        if (!location.hash) setHash("home");
-        applyHashRoute();
-      });
+      loadProducts()
+        .then(() => {
+          if (!location.hash) setHash("home");
+          applyHashRoute();
+        })
+        .catch((e) => {
+          reportBootError(String(e?.message ?? e ?? "فشل تحميل المنتجات"));
+        });
       renderCart();
     </script>
   </body>
