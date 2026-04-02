@@ -1873,12 +1873,12 @@
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
     <script>
       const CONFIG = {
-        CSV_URL: "products.csv",
-        HOME_PRODUCTS_URLS: ["home.csv", "home"],
-        ABOUT_URLS: ["about.csv", "about"],
+        CSV_URLS: ["products.csv", "../products.csv"],
+        HOME_PRODUCTS_URLS: ["home.csv", "../home.csv", "home", "../home"],
+        ABOUT_URLS: ["about.csv", "../about.csv", "about", "../about"],
         OUT_OF_STOCK_URLS_BY_CATEGORY: {
-          TOTAL: ["TOTAL_out_of_stock.csv", "TOTAL_out_of_stock"],
-          WADFOW: ["WADFOW_out_of_stock.csv", "WADFOW_out_of_stock"],
+          TOTAL: ["TOTAL_out_of_stock.csv", "../TOTAL_out_of_stock.csv", "TOTAL_out_of_stock", "../TOTAL_out_of_stock"],
+          WADFOW: ["WADFOW_out_of_stock.csv", "../WADFOW_out_of_stock.csv", "WADFOW_out_of_stock", "../WADFOW_out_of_stock"],
         },
         ITEMS_PER_PAGE: 20,
         MARKUP_RATE: 0.15,
@@ -2132,14 +2132,17 @@
         } catch {}
       }
 
-      async function fetchTextCached(url, maxAgeMs = 6 * 60 * 60 * 1000) {
+      async function fetchTextCached(url, maxAgeMs = 6 * 60 * 60 * 1000, timeoutMs = 20000) {
         const u = String(url ?? "").trim();
         if (!u) return null;
         const cacheKey = `hjy_text_cache_v1::${u}`;
         const cached = getCachedText(cacheKey, maxAgeMs);
         if (cached) return { url: u, text: cached, cached: true };
         try {
-          const res = await fetch(u, { cache: "force-cache" });
+          const controller = typeof AbortController === "function" ? new AbortController() : null;
+          const timer = controller ? window.setTimeout(() => controller.abort(), Math.max(1000, Number(timeoutMs) || 20000)) : null;
+          const res = await fetch(u, { cache: "force-cache", signal: controller ? controller.signal : undefined });
+          if (timer) window.clearTimeout(timer);
           if (!res.ok) throw new Error("Fetch failed");
           const text = await res.text();
           if (!String(text ?? "").trim()) throw new Error("Empty");
@@ -4779,6 +4782,13 @@
       }
 
       async function loadProducts() {
+        if (location.hostname === "github.com" && String(location.pathname || "").includes("/blob/")) {
+          els.hint.textContent = "لن تعمل الصفحة داخل GitHub";
+          setStatus("افتح الملف عبر GitHub Pages أو اضغط Raw ثم افتح الصفحة. GitHub (blob) يرجع HTML بدل CSV فيتجمد التحميل.", true);
+          els.grid.innerHTML = "";
+          setHomeStatus("افتح الصفحة عبر GitHub Pages.", true);
+          return;
+        }
         const loadingText = "جاري تحميل الصفحة";
         const slowNote = "الصفحة تحمل ببطء لقد شارفت على الانتهاء\nتأكد من سرعة الأنترنيت لديك";
         els.hint.textContent = `${loadingText}...`;
@@ -4789,20 +4799,25 @@
         }, 1800);
         try {
           await Promise.all([loadInfoPages(), loadOutOfStockSet()]);
-          const got = await fetchTextCached(CONFIG.CSV_URL, 6 * 60 * 60 * 1000);
+          const got = await fetchTextFirstAvailable(CONFIG.CSV_URLS, 6 * 60 * 60 * 1000);
           if (!got) {
             els.hint.textContent = "فشل التحميل";
-            setStatus("فشل تحميل products.csv. تأكد أن الملف موجود بنفس المجلد على GitHub Pages وبنفس الاسم.", true);
+            setStatus("فشل تحميل products.csv. ضعه بجانب الصفحة أو في المجلد الأب (../products.csv).", true);
             els.grid.innerHTML = "";
             setHomeStatus("فشل تحميل المنتجات.", true);
             return;
           }
           const data = String(got.text ?? "");
+          const head = data.slice(0, 250).toLowerCase();
+          if (head.includes("<!doctype html") || head.includes("<html")) throw new Error("Wrong content (HTML)");
           const lines = data.split(/\r?\n/).filter((l) => l.trim().length > 0);
           if (lines.length <= 1) throw new Error("Empty CSV");
 
           const headerLine = String(lines[0] ?? "").replace(/^\uFEFF/, "");
           const delimiter = detectCsvDelimiter(headerLine);
+          const headerCols = parseCsvLine(headerLine, delimiter).map((x) => safeLower(cleanCell(x)));
+          const looksOk = headerCols.some((h) => h.includes("code1")) || headerCols.some((h) => h.includes("code2"));
+          if (!looksOk) throw new Error("Bad header");
           const products = [];
           for (let i = 1; i < lines.length; i++) {
             const colsRaw = parseCsvLine(lines[i], delimiter);
@@ -4859,7 +4874,7 @@
           renderHome();
         } catch (e) {
           els.hint.textContent = "فشل التحميل";
-          setStatus("فشل تحميل products.csv. تأكد أن الملف موجود بنفس المجلد على GitHub Pages وبنفس الاسم.", true);
+          setStatus("فشل تحميل products.csv أو تم تحميل ملف غير صحيح. تأكد أنك على GitHub Pages وأن products.csv بجانب الصفحة أو بالمجلد الأب.", true);
           els.grid.innerHTML = "";
           setHomeStatus("فشل تحميل المنتجات.", true);
         }
