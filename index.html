@@ -3652,71 +3652,209 @@
           pdf.setFont("helvetica", "normal");
         }
 
-        let y = margin;
+        const xLeft = margin;
+        const pageHeight = pdf.internal.pageSize.getHeight();
 
-        y = pdfWriteRtl(pdf, "فاتورة طلب", xRight, y, maxWidth, 18);
-        y += 2;
-        y = pdfWriteRtl(pdf, `تاريخ الطلب: ${formatOrderDate(createdAt)}`, xRight, y, maxWidth, 11);
-        y += 2;
+        const theme = {
+          primary: [10, 163, 163],
+          border: [229, 231, 235],
+          text: [17, 24, 39],
+          muted: [107, 114, 128],
+          headerBg: [243, 244, 246],
+          zebra: [249, 250, 251],
+        };
 
-        y = pdfWriteRtl(pdf, `الاسم: ${name}`, xRight, y, maxWidth, 12);
-        y = pdfWriteRtl(pdf, `المحافظة: ${gov}`, xRight, y, maxWidth, 12);
-        y = pdfWriteRtl(pdf, `رقم الهاتف: ${phone}`, xRight, y, maxWidth, 12);
-        if (shipCurrency) y = pdfWriteRtl(pdf, `شحن العملة: ${shipCurrency}`, xRight, y, maxWidth, 12);
+        const pad = 2.2;
+        const cellTextTop = (y, fontSize) => y + pad + fontSize * 0.35;
 
-        const shipLine =
-          shipType === "HOMS"
-            ? `طريقة الاستلام: استلام ضمن حمص${homsAddress ? ` — ${homsAddress}` : ""}`
-            : `طريقة الاستلام: شحن للمحافظات${shipCenter ? ` — ${shipCenter}` : ""}`;
-        y = pdfWriteRtl(pdf, shipLine, xRight, y, maxWidth, 12);
-        y = pdfWriteRtl(pdf, `بديل توتال إلى وادفو عند عدم توفره: ${allowSwitch ? "نعم" : "لا"}`, xRight, y, maxWidth, 12);
-        if (notes) y = pdfWriteRtl(pdf, `ملاحظات: ${notes}`, xRight, y, maxWidth, 12);
+        const setText = (rgb) => pdf.setTextColor(rgb[0], rgb[1], rgb[2]);
+        const setFill = (rgb) => pdf.setFillColor(rgb[0], rgb[1], rgb[2]);
+        const setDraw = (rgb) => pdf.setDrawColor(rgb[0], rgb[1], rgb[2]);
 
-        y += 3;
-        y = pdfEnsureRoom(pdf, y, 10, margin);
-        y = pdfWriteRtl(pdf, "تفاصيل الطلب:", xRight, y, maxWidth, 13);
-        y += 1;
+        const drawTitleBar = (y) => {
+          const h = 18;
+          setFill(theme.primary);
+          setDraw(theme.primary);
+          pdf.roundedRect(xLeft, y, maxWidth, h, 3, 3, "F");
+          setText([255, 255, 255]);
+          pdf.setFontSize(13);
+          pdf.text("TOTAL SYRIA TOOLS", xLeft + 4, y + 11, { align: "left" });
+          pdf.setFontSize(14);
+          pdf.text("فاتورة طلب", xRight - 4, y + 11, { align: "right" });
+          setText(theme.text);
+          return y + h + 6;
+        };
 
-        const items = Array.from(state.cart.values());
-        for (let idx = 0; idx < items.length; idx++) {
-          const it = items[idx];
+        const drawInfoCard = (y) => {
+          const startY = y;
+          const lines = [];
+          lines.push(`تاريخ الطلب: ${formatOrderDate(createdAt)}`);
+          lines.push(`الاسم: ${name}`);
+          lines.push(`المحافظة: ${gov}`);
+          lines.push(`رقم الهاتف: ${phone}`);
+          if (shipCurrency) lines.push(`شحن العملة: ${shipCurrency}`);
+          const shipLine =
+            shipType === "HOMS"
+              ? `طريقة الاستلام: استلام ضمن حمص${homsAddress ? ` — ${homsAddress}` : ""}`
+              : `طريقة الاستلام: شحن للمحافظات${shipCenter ? ` — ${shipCenter}` : ""}`;
+          lines.push(shipLine);
+          lines.push(`بديل توتال إلى وادفو عند عدم توفره: ${allowSwitch ? "نعم" : "لا"}`);
+          if (notes) lines.push(`ملاحظات: ${notes}`);
+
+          const fontSize = 11;
+          const lh = pdfLineHeight(pdf, fontSize);
+          const cardPadY = 4;
+          const maxTextWidth = maxWidth - 10;
+          const wrappedLines = [];
+          let wrappedCount = 0;
+          for (const line of lines) {
+            const wrapped = pdf.splitTextToSize(String(line), maxTextWidth);
+            wrappedLines.push(wrapped);
+            wrappedCount += wrapped.length;
+          }
+          const cardHeight = cardPadY * 2 + lh * wrappedCount + 2;
+
+          setFill(theme.headerBg);
+          setDraw(theme.border);
+          pdf.roundedRect(xLeft, startY, maxWidth, cardHeight, 3, 3, "FD");
+          setText(theme.text);
+          let yy = startY + cardPadY + fontSize * 0.35;
+          pdf.setFontSize(fontSize);
+          for (const wrapped of wrappedLines) {
+            pdf.text(wrapped, xRight - 4, yy, { align: "right" });
+            yy += lh * wrapped.length;
+          }
+          return startY + cardHeight + 7;
+        };
+
+        const cols = [
+          { key: "product", label: "المنتج", w: 76 },
+          { key: "qty", label: "الكمية", w: 16 },
+          { key: "before", label: "قبل الخصم", w: 24 },
+          { key: "disc", label: "الخصم", w: 16 },
+          { key: "after", label: "بعد الخصم", w: 24 },
+          { key: "total", label: "المجموع", w: 30 },
+        ];
+
+        const drawTableHeader = (y) => {
+          const h = 10;
+          let x = xLeft;
+          setDraw(theme.border);
+          setFill(theme.headerBg);
+          pdf.setLineWidth(0.2);
+          pdf.setFontSize(10);
+          for (const c of cols) {
+            pdf.rect(x, y, c.w, h, "FD");
+            setText(theme.muted);
+            const labelX = c.key === "product" ? x + c.w - pad : x + c.w / 2;
+            const align = c.key === "product" ? "right" : "center";
+            pdf.text(c.label, labelX, y + 6.4, { align });
+            x += c.w;
+          }
+          setText(theme.text);
+          return y + h;
+        };
+
+        const rowHeightForItem = (it) => {
+          const about = String(it.product.about ?? "").trim();
+          pdf.setFontSize(10);
+          const aboutLines = pdf.splitTextToSize(about, cols[0].w - pad * 2);
+          const hAbout = pdfLineHeight(pdf, 10) * aboutLines.length;
+          const hCodes = pdfLineHeight(pdf, 9);
+          const hMain = pad * 2 + hAbout + 0.8 + hCodes;
+          return Math.max(12, hMain);
+        };
+
+        const drawItemRow = (y, it, idx) => {
+          const h = rowHeightForItem(it);
+          const isAlt = idx % 2 === 1;
+          let x = xLeft;
+          setDraw(theme.border);
+          setFill(isAlt ? theme.zebra : [255, 255, 255]);
+          pdf.setLineWidth(0.2);
+
           const discountPct = Math.round((Number(it.product.discountPercent) || 0) * 100);
-          const lineBefore = it.qty * it.product.priceBefore;
-          const lineAfter = it.qty * it.product.priceAfter;
+          const qty = Math.max(1, Math.min(999, Number(it.qty) || 1));
+          const lineAfter = qty * Number(it.product.priceAfter || 0);
 
-          y = pdfEnsureRoom(pdf, y, 24, margin);
-          y = pdfWriteRtl(pdf, `${idx + 1}) ${it.product.about}`, xRight, y, maxWidth, 12);
+          for (const c of cols) {
+            pdf.rect(x, y, c.w, h, "FD");
+            x += c.w;
+          }
 
-          const codes = `CODE1: ${it.product.code1}   CODE2: ${it.product.code2}`;
-          y = pdfWriteLtr(pdf, codes, margin, y, maxWidth, 10);
+          const productX = xLeft;
+          const productY = y;
+          const about = String(it.product.about ?? "").trim();
+          const code1 = String(it.product.code1 ?? "").trim();
+          const code2 = String(it.product.code2 ?? "").trim();
 
-          y = pdfWriteRtl(pdf, `الكمية: ${it.qty}`, xRight, y, maxWidth, 11);
-          y = pdfWriteRtl(
-            pdf,
-            `السعر قبل الخصم: $${formatMoney(it.product.priceBefore)}   الخصم: ${discountPct}%   السعر بعد الخصم: $${formatMoney(
-              it.product.priceAfter
-            )}`,
-            xRight,
-            y,
-            maxWidth,
-            11
-          );
-          y = pdfWriteRtl(
-            pdf,
-            `المجموع قبل الخصم: $${formatMoney(lineBefore)}   المجموع بعد الخصم: $${formatMoney(lineAfter)}`,
-            xRight,
-            y,
-            maxWidth,
-            11
-          );
+          setText(theme.text);
+          pdf.setFontSize(10);
+          const aboutLines = pdf.splitTextToSize(about, cols[0].w - pad * 2);
+          let textY = cellTextTop(productY, 10);
+          pdf.text(aboutLines, productX + cols[0].w - pad, textY, { align: "right" });
+          textY += pdfLineHeight(pdf, 10) * aboutLines.length + 0.8;
+          pdf.setFontSize(9);
+          setText(theme.muted);
+          pdf.text(`CODE1: ${code1}  CODE2: ${code2}`, productX + pad, textY, { align: "left" });
 
-          y += 2;
-        }
+          const xQty = productX + cols[0].w;
+          const xBefore = xQty + cols[1].w;
+          const xDisc = xBefore + cols[2].w;
+          const xAfter = xDisc + cols[3].w;
+          const xTotal = xAfter + cols[4].w;
+
+          setText(theme.text);
+          pdf.setFontSize(10);
+          pdf.text(String(qty), xQty + cols[1].w / 2, cellTextTop(y, 10), { align: "center" });
+          pdf.text(`$${formatMoney(it.product.priceBefore)}`, xBefore + cols[2].w - pad, cellTextTop(y, 10), { align: "right" });
+          pdf.text(`${discountPct}%`, xDisc + cols[3].w / 2, cellTextTop(y, 10), { align: "center" });
+          pdf.text(`$${formatMoney(it.product.priceAfter)}`, xAfter + cols[4].w - pad, cellTextTop(y, 10), { align: "right" });
+          pdf.text(`$${formatMoney(lineAfter)}`, xTotal + cols[5].w - pad, cellTextTop(y, 10), { align: "right" });
+
+          return y + h;
+        };
+
+        const drawTotalsBox = (y) => {
+          const boxW = 86;
+          const boxH = 24;
+          const x = xRight - boxW;
+          y = pdfEnsureRoom(pdf, y, boxH + 2, margin);
+          setFill(theme.headerBg);
+          setDraw(theme.border);
+          pdf.roundedRect(x, y, boxW, boxH, 3, 3, "FD");
+          setText(theme.muted);
+          pdf.setFontSize(10);
+          pdf.text("الإجمالي قبل الخصم", x + boxW - 4, y + 8.2, { align: "right" });
+          pdf.text("الإجمالي بعد الخصم", x + boxW - 4, y + 16.8, { align: "right" });
+          setText(theme.text);
+          pdf.setFontSize(11);
+          pdf.text(`$${formatMoney(cartTotalsBefore())}`, x + 4, y + 8.2, { align: "left" });
+          pdf.text(`$${formatMoney(cartTotals())}`, x + 4, y + 16.8, { align: "left" });
+          return y + boxH;
+        };
+
+        let y = margin;
+        y = drawTitleBar(y);
+        y = drawInfoCard(y);
 
         y = pdfEnsureRoom(pdf, y, 20, margin);
-        y += 2;
-        y = pdfWriteRtl(pdf, `الإجمالي قبل الخصم: $${formatMoney(cartTotalsBefore())}`, xRight, y, maxWidth, 13);
-        y = pdfWriteRtl(pdf, `الإجمالي بعد الخصم: $${formatMoney(cartTotals())}`, xRight, y, maxWidth, 13);
+        y = drawTableHeader(y);
+
+        const items = Array.from(state.cart.values());
+        for (let i = 0; i < items.length; i++) {
+          const it = items[i];
+          const rh = rowHeightForItem(it);
+          if (y + rh > pageHeight - margin) {
+            pdf.addPage();
+            y = margin;
+            y = drawTableHeader(y);
+          }
+          y = drawItemRow(y, it, i);
+        }
+
+        y += 6;
+        y = drawTotalsBox(y);
 
         return pdf.output("blob");
       }
