@@ -3653,314 +3653,70 @@
         }
 
         const xLeft = margin;
-        const pageHeight = pdf.internal.pageSize.getHeight();
-
-        const theme = {
-          primary: [10, 163, 163],
-          border: [229, 231, 235],
-          text: [17, 24, 39],
-          muted: [107, 114, 128],
-          headerBg: [243, 244, 246],
-          zebra: [249, 250, 251],
-          success: [22, 163, 74],
-        };
-
-        const pad = 2.2;
-        const cellTextTop = (y, fontSize) => y + pad + fontSize * 0.35;
-
-        const setText = (rgb) => pdf.setTextColor(rgb[0], rgb[1], rgb[2]);
-        const setFill = (rgb) => pdf.setFillColor(rgb[0], rgb[1], rgb[2]);
-        const setDraw = (rgb) => pdf.setDrawColor(rgb[0], rgb[1], rgb[2]);
-
-        const dt = new Date(createdAt);
-        const dateStr = (() => {
-          try {
-            return dt.toLocaleDateString("ar-SY");
-          } catch {
-            return dt.toISOString().slice(0, 10);
-          }
-        })();
-        const timeStr = (() => {
-          try {
-            return dt.toLocaleTimeString("ar-SY", { hour: "2-digit", minute: "2-digit" });
-          } catch {
-            return dt.toISOString().slice(11, 16);
-          }
-        })();
-        const invoiceNo = String(createdAt).slice(-7);
-
+        const beforeTotal = Number(cartTotalsBefore()) || 0;
+        const afterTotal = Number(cartTotals()) || 0;
+        const discountValue = Math.max(0, beforeTotal - afterTotal);
+        const discountPct = beforeTotal > 0 ? (discountValue / beforeTotal) * 100 : 0;
         const shipLine =
           shipType === "HOMS"
             ? `استلام ضمن حمص${homsAddress ? ` — ${homsAddress}` : ""}`
             : `شحن للمحافظات${shipCenter ? ` — ${shipCenter}` : ""}`;
 
-        const drawHeader = (y) => {
-          setText(theme.text);
-          pdf.setFontSize(22);
-          pdf.text("TOTAL TOOLS SYRIA", pageWidth / 2, y + 10, { align: "center" });
-          setText(theme.muted);
-          pdf.setFontSize(11);
-          pdf.text("فاتورة طلب", pageWidth / 2, y + 16, { align: "center" });
-          setDraw(theme.primary);
-          pdf.setLineWidth(0.8);
-          pdf.line(xLeft, y + 20, xRight, y + 20);
-          setDraw(theme.border);
-          pdf.setLineWidth(0.2);
-          setText(theme.text);
-          return y + 26;
-        };
-
-        const kvMeasure = (key, value, w) => {
-          pdf.setFontSize(9);
-          const kLines = pdf.splitTextToSize(String(key ?? "").trim(), w - 2 * pad);
-          pdf.setFontSize(11);
-          const vLines = pdf.splitTextToSize(String(value ?? "").trim() || "—", w - 2 * pad);
-          return { kLines, vLines, lines: kLines.length + vLines.length };
-        };
-
-        const drawKvCell = (x, y, w, h, key, value) => {
-          setDraw(theme.border);
-          setFill([255, 255, 255]);
-          pdf.rect(x, y, w, h, "FD");
-          const m = kvMeasure(key, value, w);
-          let yy = y + pad + 9 * 0.35;
-          setText(theme.muted);
-          pdf.setFontSize(9);
-          pdf.text(m.kLines, x + w - pad, yy, { align: "right" });
-          yy += pdfLineHeight(pdf, 9) * m.kLines.length;
-          setText(theme.text);
-          pdf.setFontSize(11);
-          pdf.text(m.vLines, x + w - pad, yy + 0.4, { align: "right" });
-        };
-
-        const drawMetaGrid = (y) => {
-          const rowGap = 2.5;
-          const colGap = 2.5;
-          const colW = (maxWidth - colGap) / 2;
-          const rows = [
-            [
-              { k: "التاريخ", v: dateStr },
-              { k: "الوقت", v: timeStr },
-            ],
-            [
-              { k: "رقم الفاتورة", v: invoiceNo },
-              { k: "الهاتف", v: phone },
-            ],
-            [
-              { k: "الاسم", v: name },
-              { k: "المحافظة", v: gov },
-            ],
-            [
-              { k: "طريقة الاستلام", v: shipLine },
-              { k: "شحن العملة", v: shipCurrency || "—" },
-            ],
-          ];
-
-          setFill(theme.headerBg);
-          setDraw(theme.border);
-          const startY = y;
-
-          let yy = startY;
-          for (const r of rows) {
-            const left = kvMeasure(r[0].k, r[0].v, colW);
-            const right = kvMeasure(r[1].k, r[1].v, colW);
-            const lines = Math.max(left.lines, right.lines);
-            const h = Math.max(12, pad * 2 + pdfLineHeight(pdf, 11) * lines);
-            yy = pdfEnsureRoom(pdf, yy, h + rowGap, margin);
-            drawKvCell(xLeft, yy, colW, h, r[0].k, r[0].v);
-            drawKvCell(xLeft + colW + colGap, yy, colW, h, r[1].k, r[1].v);
-            yy += h + rowGap;
-          }
-
-          if (notes) {
-            const m = kvMeasure("ملاحظات", notes, maxWidth);
-            const h = Math.max(12, pad * 2 + pdfLineHeight(pdf, 11) * m.lines);
-            yy = pdfEnsureRoom(pdf, yy, h + rowGap, margin);
-            drawKvCell(xLeft, yy, maxWidth, h, "ملاحظات", notes);
-            yy += h + rowGap;
-          }
-
-          return yy + 2;
-        };
-
-        const cols = [
-          { key: "total", label: "الإجمالي", w: 16, align: "right" },
-          { key: "qty", label: "الكمية", w: 12, align: "center" },
-          { key: "after", label: "بعد الخصم", w: 18, align: "right" },
-          { key: "disc", label: "الخصم", w: 12, align: "center" },
-          { key: "before", label: "قبل الخصم", w: 18, align: "right" },
-          { key: "desc", label: "البيان", w: 70, align: "right" },
-          { key: "code2", label: "Code 2", w: 24, align: "center" },
-          { key: "code1", label: "Code 1", w: 16, align: "center" },
-        ];
-
-        const drawTableHeader = (y) => {
-          const h = 10;
-          let x = xLeft;
-          setDraw(theme.border);
-          setFill(theme.headerBg);
-          pdf.setLineWidth(0.2);
-          pdf.setFontSize(10);
-          for (const c of cols) {
-            pdf.rect(x, y, c.w, h, "FD");
-            setText(theme.muted);
-            const labelX = c.align === "right" ? x + c.w - pad : x + c.w / 2;
-            const align = c.align === "right" ? "right" : "center";
-            pdf.text(c.label, labelX, y + 6.4, { align });
-            x += c.w;
-          }
-          setText(theme.text);
-          return y + h;
-        };
-
-        const rowHeightForItem = (it) => {
-          const about = String(it.product.about ?? "").trim();
-          const descW = (cols.find((c) => c.key === "desc")?.w || 60) - pad * 2;
-          const code2W = (cols.find((c) => c.key === "code2")?.w || 20) - pad * 2;
-          const code1W = (cols.find((c) => c.key === "code1")?.w || 14) - pad * 2;
-
-          pdf.setFontSize(10);
-          const aboutLines = pdf.splitTextToSize(about, descW);
-          const hAbout = pdfLineHeight(pdf, 10) * aboutLines.length;
-
-          pdf.setFontSize(9);
-          const code1 = String(it.product.code1 ?? "").trim() || "—";
-          const code2 = String(it.product.code2 ?? "").trim() || "—";
-          const code1Lines = pdf.splitTextToSize(code1, code1W);
-          const code2Lines = pdf.splitTextToSize(code2, code2W);
-          const hCodes = pdfLineHeight(pdf, 9) * Math.max(code1Lines.length, code2Lines.length);
-
-          const hMain = pad * 2 + Math.max(hAbout, hCodes);
-          return Math.max(12, hMain);
-        };
-
-        const drawItemRow = (y, it, idx) => {
-          const h = rowHeightForItem(it);
-          const isAlt = idx % 2 === 1;
-          let x = xLeft;
-          setDraw(theme.border);
-          setFill(isAlt ? theme.zebra : [255, 255, 255]);
-          pdf.setLineWidth(0.2);
-
-          const discountPct = Math.round((Number(it.product.discountPercent) || 0) * 100);
-          const qty = Math.max(1, Math.min(999, Number(it.qty) || 1));
-          const lineAfter = qty * Number(it.product.priceAfter || 0);
-
-          for (const c of cols) {
-            pdf.rect(x, y, c.w, h, "FD");
-            x += c.w;
-          }
-
-          const about = String(it.product.about ?? "").trim();
-          const code1 = String(it.product.code1 ?? "").trim();
-          const code2 = String(it.product.code2 ?? "").trim();
-
-          setText(theme.text);
-          pdf.setFontSize(10);
-          const getColX = (key) => {
-            let xx = xLeft;
-            for (const c of cols) {
-              if (c.key === key) return xx;
-              xx += c.w;
-            }
-            return xLeft;
-          };
-
-          const xTotal = getColX("total");
-          const xQty = getColX("qty");
-          const xAfter = getColX("after");
-          const xDisc = getColX("disc");
-          const xBefore = getColX("before");
-          const xDesc = getColX("desc");
-          const xCode2 = getColX("code2");
-          const xCode1 = getColX("code1");
-
-          pdf.setFontSize(10);
-          pdf.text(`$${formatMoney(lineAfter)}`, xTotal + cols.find((c) => c.key === "total")?.w - pad, cellTextTop(y, 10), { align: "right" });
-          pdf.text(String(qty), xQty + (cols.find((c) => c.key === "qty")?.w || 0) / 2, cellTextTop(y, 10), { align: "center" });
-          pdf.text(
-            `$${formatMoney(it.product.priceAfter)}`,
-            xAfter + (cols.find((c) => c.key === "after")?.w || 0) - pad,
-            cellTextTop(y, 10),
-            { align: "right" }
-          );
-          pdf.text(`${discountPct}%`, xDisc + (cols.find((c) => c.key === "disc")?.w || 0) / 2, cellTextTop(y, 10), { align: "center" });
-          pdf.text(
-            `$${formatMoney(it.product.priceBefore)}`,
-            xBefore + (cols.find((c) => c.key === "before")?.w || 0) - pad,
-            cellTextTop(y, 10),
-            { align: "right" }
-          );
-
-          const aboutLines = pdf.splitTextToSize(about, (cols.find((c) => c.key === "desc")?.w || 60) - pad * 2);
-          pdf.text(aboutLines, xDesc + (cols.find((c) => c.key === "desc")?.w || 60) - pad, cellTextTop(y, 10), { align: "right" });
-
-          setText(theme.text);
-          const wCode2 = cols.find((c) => c.key === "code2")?.w || 0;
-          const wCode1 = cols.find((c) => c.key === "code1")?.w || 0;
-          pdf.setFontSize(9);
-          const code2Lines = pdf.splitTextToSize(code2 || "—", Math.max(1, wCode2 - pad * 2));
-          const code1Lines = pdf.splitTextToSize(code1 || "—", Math.max(1, wCode1 - pad * 2));
-          pdf.text(code2Lines, xCode2 + wCode2 / 2, cellTextTop(y, 9), { align: "center" });
-          pdf.text(code1Lines, xCode1 + wCode1 / 2, cellTextTop(y, 9), { align: "center" });
-
-          return y + h;
-        };
-
-        const drawTotalsBox = (y) => {
-          const beforeTotal = Number(cartTotalsBefore()) || 0;
-          const afterTotal = Number(cartTotals()) || 0;
-          const discountValue = Math.max(0, beforeTotal - afterTotal);
-          const discountPct = beforeTotal > 0 ? (discountValue / beforeTotal) * 100 : 0;
-
-          const boxW = 96;
-          const boxH = 32;
-          const x = xRight - boxW;
-          y = pdfEnsureRoom(pdf, y, boxH + 2, margin);
-          setFill([255, 255, 255]);
-          setDraw(theme.border);
-          pdf.roundedRect(x, y, boxW, boxH, 3, 3, "FD");
-          setText(theme.muted);
-          pdf.setFontSize(10);
-          pdf.text("المجموع قبل الخصم", x + boxW - 4, y + 9, { align: "right" });
-          pdf.text(`قيمة الخصم (${formatMoney(discountPct)}%)`, x + boxW - 4, y + 17.5, { align: "right" });
-          pdf.text("الإجمالي النهائي", x + boxW - 4, y + 26, { align: "right" });
-          setText(theme.text);
-          pdf.setFontSize(11);
-          pdf.text(`$${formatMoney(beforeTotal)}`, x + 4, y + 9, { align: "left" });
-          pdf.text(`$${formatMoney(discountValue)}`, x + 4, y + 17.5, { align: "left" });
-          setText(theme.success);
-          pdf.setFontSize(12);
-          pdf.text(`$${formatMoney(afterTotal)}`, x + 4, y + 26, { align: "left" });
-          setText(theme.text);
-          return y + boxH;
-        };
-
         let y = margin;
-        y = drawHeader(y);
-        y = drawMetaGrid(y);
 
-        y = pdfEnsureRoom(pdf, y, 20, margin);
-        y = drawTableHeader(y);
+        const writeRtl = (text, fontSize = 12, extraGap = 0) => {
+          const t = String(text ?? "").trim();
+          if (!t) return;
+          pdf.setFontSize(fontSize);
+          const lines = pdf.splitTextToSize(t, maxWidth);
+          const needed = pdfLineHeight(pdf, fontSize) * lines.length + extraGap;
+          y = pdfEnsureRoom(pdf, y, needed, margin);
+          y = pdfWriteRtl(pdf, t, xRight, y, maxWidth, fontSize);
+          y += extraGap;
+        };
+
+        const writeLtr = (text, fontSize = 11, extraGap = 0) => {
+          const t = String(text ?? "").trim();
+          if (!t) return;
+          pdf.setFontSize(fontSize);
+          const lines = pdf.splitTextToSize(t, maxWidth);
+          const needed = pdfLineHeight(pdf, fontSize) * lines.length + extraGap;
+          y = pdfEnsureRoom(pdf, y, needed, margin);
+          y = pdfWriteLtr(pdf, t, xLeft, y, maxWidth, fontSize);
+          y += extraGap;
+        };
+
+        writeRtl("TOTAL TOOLS SYRIA", 18, 1.5);
+        writeRtl("فاتورة طلب", 13, 3);
+
+        writeRtl(`تاريخ الطلب: ${formatOrderDate(createdAt)}`, 11, 1.5);
+        writeRtl(`الاسم: ${name}`, 12, 1);
+        writeRtl(`المحافظة: ${gov}`, 12, 1);
+        writeRtl("رقم الهاتف:", 12, 0);
+        writeLtr(phone || "—", 12, 1.5);
+        if (shipCurrency) writeRtl(`شحن العملة: ${shipCurrency}`, 12, 1);
+        writeRtl(`طريقة الاستلام: ${shipLine}`, 12, 1);
+        writeRtl(`بديل توتال إلى وادفو عند عدم توفره: ${allowSwitch ? "نعم" : "لا"}`, 12, 1.5);
+        if (notes) writeRtl(`ملاحظات: ${notes}`, 12, 2);
+
+        writeRtl("ملخص الفاتورة:", 13, 1.5);
+        writeRtl(`الإجمالي قبل الخصم: $${formatMoney(beforeTotal)}`, 12, 1);
+        writeRtl(`قيمة الخصم: $${formatMoney(discountValue)} (${formatMoney(discountPct)}%)`, 12, 1);
+        writeRtl(`الإجمالي بعد الخصم: $${formatMoney(afterTotal)}`, 12, 3);
 
         const items = Array.from(state.cart.values());
+        const totalQty = cartCountTotal();
+        writeRtl(`المواد (${items.length} صنف) — عدد المواد: ${totalQty}`, 13, 2);
+
         for (let i = 0; i < items.length; i++) {
           const it = items[i];
-          const rh = rowHeightForItem(it);
-          if (y + rh > pageHeight - margin) {
-            pdf.addPage();
-            y = margin;
-            y = drawTableHeader(y);
-          }
-          y = drawItemRow(y, it, i);
+          const about = String(it.product.about ?? "").trim();
+          const code2 = String(it.product.code2 ?? "").trim();
+          const qty = Math.max(1, Math.min(999, Number(it.qty) || 1));
+          writeRtl(`${i + 1}- ${about || "—"}`, 12, 1);
+          if (code2) writeLtr(`Code2: ${code2}`, 11, 1);
+          writeRtl(`العدد: ${qty}`, 11, 2.2);
         }
-
-        y += 6;
-        y = drawTotalsBox(y);
-
-        setText(theme.muted);
-        pdf.setFontSize(9);
-        pdf.text("BY HJY.co", pageWidth / 2, pageHeight - 8, { align: "center" });
 
         return pdf.output("blob");
       }
