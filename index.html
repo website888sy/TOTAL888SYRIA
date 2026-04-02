@@ -1934,25 +1934,17 @@
       });
 
       const CONFIG = {
-        CSV_URLS: ["products.csv", "src/products.csv", "../products.csv"],
-        HOME_PRODUCTS_URLS: ["home.csv", "src/home.csv", "../home.csv", "home", "src/home", "../home"],
-        ABOUT_URLS: ["about.csv", "src/about.csv", "../about.csv", "about", "src/about", "../about"],
+        CSV_URLS: ["products.csv"],
+        HOME_PRODUCTS_URLS: ["home.csv", "home"],
+        ABOUT_URLS: ["about.csv", "about"],
         OUT_OF_STOCK_URLS_BY_CATEGORY: {
           TOTAL: [
             "TOTAL_out_of_stock.csv",
-            "src/TOTAL_out_of_stock.csv",
-            "../TOTAL_out_of_stock.csv",
             "TOTAL_out_of_stock",
-            "src/TOTAL_out_of_stock",
-            "../TOTAL_out_of_stock",
           ],
           WADFOW: [
             "WADFOW_out_of_stock.csv",
-            "src/WADFOW_out_of_stock.csv",
-            "../WADFOW_out_of_stock.csv",
             "WADFOW_out_of_stock",
-            "src/WADFOW_out_of_stock",
-            "../WADFOW_out_of_stock",
           ],
         },
         ITEMS_PER_PAGE: 20,
@@ -4877,7 +4869,7 @@
           const got = await fetchTextFirstAvailable(CONFIG.CSV_URLS, 6 * 60 * 60 * 1000);
           if (!got) {
             els.hint.textContent = "فشل التحميل";
-            setStatus("فشل تحميل products.csv. ضعه بجانب الصفحة أو في المجلد الأب (../products.csv).", true);
+            setStatus("فشل تحميل products.csv. تأكد أن الملف موجود بنفس مجلد index.html على GitHub Pages وبنفس الاسم.", true);
             els.grid.innerHTML = "";
             setHomeStatus("فشل تحميل المنتجات.", true);
             return;
@@ -4949,7 +4941,7 @@
           renderHome();
         } catch (e) {
           els.hint.textContent = "فشل التحميل";
-          setStatus("فشل تحميل products.csv أو تم تحميل ملف غير صحيح. تأكد أنك على GitHub Pages وأن products.csv بجانب الصفحة أو بالمجلد الأب.", true);
+          setStatus("فشل تحميل products.csv أو تم تحميل ملف غير صحيح. تأكد أنك على GitHub Pages وأن products.csv بجانب index.html.", true);
           els.grid.innerHTML = "";
           setHomeStatus("فشل تحميل المنتجات.", true);
         }
