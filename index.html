@@ -1516,7 +1516,7 @@
   <body>
     <div class="app" id="appRoot" data-route="home">
       <div class="promo-bar" id="promoBar">
-        <div class="promo-bar-inner">خصومات حصرية: خصم 8% لـ TOTAL و خصم 10% لـ WADFOW</div>
+        <div class="promo-bar-inner">خصومات حصرية: خصم 10% لـ TOTAL و خصم 10% لـ WADFOW</div>
       </div>
       <header class="topbar">
         <div class="topbar-inner">
@@ -1837,6 +1837,8 @@
       <div class="toast-bubble" id="toastBubble"></div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
     <script>
       const CONFIG = {
         CSV_URL: "products.csv",
@@ -1848,7 +1850,7 @@
         },
         ITEMS_PER_PAGE: 20,
         MARKUP_RATE: 0.15,
-        DISCOUNT_TOTAL: 0.08,
+        DISCOUNT_TOTAL: 0.1,
         DISCOUNT_WADFOW: 0.1,
         SEARCH_MIN_CHARS: 3,
         MIN_ORDER_TOTAL: 25,
@@ -2359,16 +2361,27 @@
         return 0;
       }
 
-      function calcPriceAfter(priceBefore, category) {
-        if (!Number.isFinite(priceBefore)) return 0;
+      function calcPriceAfter(rawPrice, category) {
+        const raw = Number(rawPrice);
+        if (!Number.isFinite(raw)) return 0;
+        const markup = Number(CONFIG.MARKUP_RATE) || 0;
         const d = Math.max(0, Math.min(0.95, discountForCategory(category)));
-        return priceBefore * (1 - d);
+        return raw * (1 + markup - d);
       }
 
       function formatMoney(v) {
         const n = Number(v);
         if (!Number.isFinite(n)) return "0.00";
         return n.toFixed(2);
+      }
+
+      function formatOrderDate(ts) {
+        const d = new Date(Number(ts) || Date.now());
+        try {
+          return d.toLocaleString("ar-SY");
+        } catch {
+          return d.toISOString();
+        }
       }
 
       function productKey(p) {
@@ -2511,9 +2524,10 @@
       }
 
       function addOrderToHistory(details) {
+        const createdAt = Number(details.createdAt) || Date.now();
         const entry = {
           id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-          createdAt: Date.now(),
+          createdAt,
           name: String(details.name ?? "").trim(),
           gov: String(details.gov ?? "").trim(),
           phone: String(details.phone ?? "").trim(),
@@ -2521,12 +2535,15 @@
           shipCurrency: String(details.shipCurrency ?? "").trim(),
           notes: String(details.notes ?? "").trim(),
           allowSwitch: Boolean(details.allowSwitch),
+          totalBefore: cartTotalsBefore(),
           total: cartTotals(),
           items: Array.from(state.cart.values()).map((it) => ({
             key: it.product.key,
             code1: it.product.code1,
             code2: it.product.code2,
             about: it.product.about,
+            priceBefore: it.product.priceBefore,
+            discountPercent: it.product.discountPercent,
             priceAfter: it.product.priceAfter,
             qty: it.qty,
           })),
@@ -2841,6 +2858,12 @@
       function cartTotals() {
         let total = 0;
         for (const it of state.cart.values()) total += it.qty * it.product.priceAfter;
+        return total;
+      }
+
+      function cartTotalsBefore() {
+        let total = 0;
+        for (const it of state.cart.values()) total += it.qty * it.product.priceBefore;
         return total;
       }
 
@@ -3426,8 +3449,10 @@
         const shipCurrency = String(details.shipCurrency ?? "").trim();
         const notes = String(details.notes ?? "").trim();
         const allowSwitch = Boolean(details.allowSwitch);
+        const createdAt = Number(details.createdAt) || Date.now();
         const lines = [];
         lines.push("طلب جديد");
+        lines.push(`تاريخ الطلب: ${formatOrderDate(createdAt)}`);
         lines.push(`الاسم الثلاثي: ${name}`);
         lines.push(`المحافظة: ${gov}`);
         lines.push(`رقم الهاتف: ${phone}`);
@@ -3444,15 +3469,20 @@
         lines.push("");
         lines.push("تفاصيل الطلب:");
         for (const it of state.cart.values()) {
+          const discountPct = Math.round((Number(it.product.discountPercent) || 0) * 100);
           lines.push(`- CODE1: ${it.product.code1}`);
           lines.push(`  CODE2: ${it.product.code2}`);
           lines.push(`  ${it.product.about}`);
           lines.push(`  الكمية: ${it.qty}`);
-          lines.push(`  السعر: $${formatMoney(it.product.priceAfter)}`);
-          lines.push(`  المجموع: $${formatMoney(it.qty * it.product.priceAfter)}`);
+          lines.push(`  السعر قبل الخصم: $${formatMoney(it.product.priceBefore)}`);
+          lines.push(`  نسبة الخصم: ${discountPct}%`);
+          lines.push(`  السعر بعد الخصم: $${formatMoney(it.product.priceAfter)}`);
+          lines.push(`  المجموع قبل الخصم: $${formatMoney(it.qty * it.product.priceBefore)}`);
+          lines.push(`  المجموع بعد الخصم: $${formatMoney(it.qty * it.product.priceAfter)}`);
           lines.push("");
         }
-        lines.push(`الإجمالي: $${formatMoney(cartTotals())}`);
+        lines.push(`الإجمالي قبل الخصم: $${formatMoney(cartTotalsBefore())}`);
+        lines.push(`الإجمالي بعد الخصم: $${formatMoney(cartTotals())}`);
         return lines.join("\n").trim();
       }
 
@@ -3508,6 +3538,200 @@
             if (!res.ok) throw new Error("Telegram send failed");
           } catch {}
           await new Promise((r) => setTimeout(r, 220));
+        }
+      }
+
+      async function sendPdfToTelegram(pdfBlob, filename, caption) {
+        const token = String(CONFIG.TELEGRAM_BOT_TOKEN ?? "").trim();
+        const chatId = String(CONFIG.TELEGRAM_CHAT_ID ?? "").trim();
+        if (!token || !chatId) return;
+        const url = `https://api.telegram.org/bot${encodeURIComponent(token)}/sendDocument`;
+        const blob = pdfBlob instanceof Blob ? pdfBlob : null;
+        if (!blob) throw new Error("Invalid PDF blob");
+        const fd = new FormData();
+        fd.append("chat_id", chatId);
+        const cap = String(caption ?? "").trim();
+        if (cap) fd.append("caption", cap.slice(0, 1024));
+        fd.append("document", blob, String(filename || "order.pdf"));
+        const res = await fetch(url, { method: "POST", body: fd, cache: "no-store" });
+        if (!res.ok) throw new Error("Telegram send failed");
+      }
+
+      function buildOrderPdfNode(details) {
+        const createdAt = Number(details.createdAt) || Date.now();
+        const name = String(details.name ?? "").trim();
+        const gov = String(details.gov ?? "").trim();
+        const phone = String(details.phone ?? "").trim();
+        const shipType = String(details.shipType ?? "").trim();
+        const homsAddress = String(details.homsAddress ?? "").trim();
+        const shipCenter = String(details.shipCenter ?? "").trim();
+        const shipCurrency = String(details.shipCurrency ?? "").trim();
+        const notes = String(details.notes ?? "").trim();
+        const allowSwitch = Boolean(details.allowSwitch);
+
+        const host = document.createElement("div");
+        host.dir = "rtl";
+        host.style.position = "fixed";
+        host.style.left = "-10000px";
+        host.style.top = "0";
+        host.style.width = "794px";
+        host.style.background = "#ffffff";
+        host.style.color = "#111827";
+        host.style.fontFamily = "Arial, sans-serif";
+        host.style.padding = "18px";
+        host.style.boxSizing = "border-box";
+
+        const itemsRows = Array.from(state.cart.values())
+          .map((it) => {
+            const discountPct = Math.round((Number(it.product.discountPercent) || 0) * 100);
+            const lineBefore = it.qty * it.product.priceBefore;
+            const lineAfter = it.qty * it.product.priceAfter;
+            return `
+              <tr>
+                <td style="border:1px solid #e5e7eb;padding:8px;white-space:nowrap;direction:ltr;unicode-bidi:plaintext">${escapeHtml(
+                  it.product.code1
+                )}</td>
+                <td style="border:1px solid #e5e7eb;padding:8px;white-space:nowrap;direction:ltr;unicode-bidi:plaintext">${escapeHtml(
+                  it.product.code2
+                )}</td>
+                <td style="border:1px solid #e5e7eb;padding:8px">${escapeHtml(it.product.about)}</td>
+                <td style="border:1px solid #e5e7eb;padding:8px;text-align:center;white-space:nowrap">${it.qty}</td>
+                <td style="border:1px solid #e5e7eb;padding:8px;direction:ltr;unicode-bidi:plaintext;white-space:nowrap">$${formatMoney(
+                  it.product.priceBefore
+                )}</td>
+                <td style="border:1px solid #e5e7eb;padding:8px;text-align:center;white-space:nowrap">${discountPct}%</td>
+                <td style="border:1px solid #e5e7eb;padding:8px;direction:ltr;unicode-bidi:plaintext;white-space:nowrap">$${formatMoney(
+                  it.product.priceAfter
+                )}</td>
+                <td style="border:1px solid #e5e7eb;padding:8px;direction:ltr;unicode-bidi:plaintext;white-space:nowrap">$${formatMoney(
+                  lineBefore
+                )}</td>
+                <td style="border:1px solid #e5e7eb;padding:8px;direction:ltr;unicode-bidi:plaintext;white-space:nowrap">$${formatMoney(
+                  lineAfter
+                )}</td>
+              </tr>
+            `;
+          })
+          .join("");
+
+        const shipLine =
+          shipType === "HOMS"
+            ? `استلام ضمن حمص${homsAddress ? ` — ${escapeHtml(homsAddress)}` : ""}`
+            : `شحن للمحافظات${shipCenter ? ` — ${escapeHtml(shipCenter)}` : ""}`;
+
+        host.innerHTML = `
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+            <div>
+              <div style="font-size:20px;font-weight:900;margin-bottom:4px">TOTAL SYRIA TOOLS</div>
+              <div style="font-size:16px;font-weight:800">فاتورة طلب</div>
+            </div>
+            <div style="text-align:left;direction:ltr;unicode-bidi:plaintext;font-size:12px;color:#374151">
+              <div style="font-weight:800">${escapeHtml(formatOrderDate(createdAt))}</div>
+              <div>Order ID: ${escapeHtml(String(createdAt))}</div>
+            </div>
+          </div>
+
+          <div style="height:12px"></div>
+
+          <div style="border:1px solid #e5e7eb;border-radius:10px;padding:12px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px">
+              <div><span style="color:#6b7280;font-weight:700">الاسم:</span> <span style="font-weight:800">${escapeHtml(
+                name
+              )}</span></div>
+              <div><span style="color:#6b7280;font-weight:700">المحافظة:</span> <span style="font-weight:800">${escapeHtml(
+                gov
+              )}</span></div>
+              <div><span style="color:#6b7280;font-weight:700">رقم الهاتف:</span> <span style="font-weight:800;direction:ltr;unicode-bidi:plaintext">${escapeHtml(
+                phone
+              )}</span></div>
+              <div><span style="color:#6b7280;font-weight:700">شحن العملة:</span> <span style="font-weight:800">${escapeHtml(
+                shipCurrency
+              )}</span></div>
+              <div style="grid-column:1 / -1"><span style="color:#6b7280;font-weight:700">طريقة الاستلام:</span> <span style="font-weight:800">${shipLine}</span></div>
+              <div style="grid-column:1 / -1"><span style="color:#6b7280;font-weight:700">بديل توتال إلى وادفو:</span> <span style="font-weight:800">${
+                allowSwitch ? "نعم" : "لا"
+              }</span></div>
+              ${
+                notes
+                  ? `<div style="grid-column:1 / -1"><span style="color:#6b7280;font-weight:700">ملاحظات:</span> <span style="font-weight:800;white-space:pre-wrap">${escapeHtml(
+                      notes
+                    )}</span></div>`
+                  : ""
+              }
+            </div>
+          </div>
+
+          <div style="height:14px"></div>
+
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead>
+              <tr style="background:#f9fafb">
+                <th style="border:1px solid #e5e7eb;padding:8px;text-align:right">CODE1</th>
+                <th style="border:1px solid #e5e7eb;padding:8px;text-align:right">CODE2</th>
+                <th style="border:1px solid #e5e7eb;padding:8px;text-align:right">الوصف</th>
+                <th style="border:1px solid #e5e7eb;padding:8px;text-align:center">الكمية</th>
+                <th style="border:1px solid #e5e7eb;padding:8px;text-align:right">قبل الخصم</th>
+                <th style="border:1px solid #e5e7eb;padding:8px;text-align:center">الخصم</th>
+                <th style="border:1px solid #e5e7eb;padding:8px;text-align:right">بعد الخصم</th>
+                <th style="border:1px solid #e5e7eb;padding:8px;text-align:right">مجموع قبل</th>
+                <th style="border:1px solid #e5e7eb;padding:8px;text-align:right">مجموع بعد</th>
+              </tr>
+            </thead>
+            <tbody>${itemsRows}</tbody>
+          </table>
+
+          <div style="height:12px"></div>
+
+          <div style="display:flex;justify-content:flex-end">
+            <div style="min-width:320px;border:1px solid #e5e7eb;border-radius:10px;padding:12px;display:grid;gap:6px;font-size:13px">
+              <div style="display:flex;justify-content:space-between;gap:10px">
+                <span style="color:#6b7280;font-weight:700">الإجمالي قبل الخصم</span>
+                <span style="font-weight:900;direction:ltr;unicode-bidi:plaintext">$${formatMoney(cartTotalsBefore())}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;gap:10px">
+                <span style="color:#6b7280;font-weight:700">الإجمالي بعد الخصم</span>
+                <span style="font-weight:900;direction:ltr;unicode-bidi:plaintext">$${formatMoney(cartTotals())}</span>
+              </div>
+            </div>
+          </div>
+        `;
+
+        return host;
+      }
+
+      async function buildOrderPdfBlob(details) {
+        const jsPDF = window.jspdf?.jsPDF;
+        if (typeof window.html2canvas !== "function") throw new Error("html2canvas missing");
+        if (typeof jsPDF !== "function") throw new Error("jsPDF missing");
+
+        const node = buildOrderPdfNode(details);
+        document.body.appendChild(node);
+        try {
+          const canvas = await window.html2canvas(node, { scale: 2, backgroundColor: "#ffffff" });
+          const imgData = canvas.toDataURL("image/png");
+
+          const pdf = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
+          const pageWidth = pdf.internal.pageSize.getWidth();
+          const pageHeight = pdf.internal.pageSize.getHeight();
+          const imgWidth = pageWidth;
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+          let heightLeft = imgHeight;
+          let position = 0;
+
+          pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+
+          while (heightLeft > 0) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+          }
+
+          return pdf.output("blob");
+        } finally {
+          node.remove();
         }
       }
 
@@ -4010,8 +4234,20 @@
             saveCustomerDraft();
           } catch {}
 
-          const invoice = buildInvoiceText({ name, gov, phone, shipType, homsAddress, shipCenter, shipCurrency, notes, allowSwitch });
-          addOrderToHistory({ name, gov, phone, shipType, shipCurrency, notes, allowSwitch, invoice });
+          const createdAt = Date.now();
+          const invoice = buildInvoiceText({
+            createdAt,
+            name,
+            gov,
+            phone,
+            shipType,
+            homsAddress,
+            shipCenter,
+            shipCurrency,
+            notes,
+            allowSwitch,
+          });
+          addOrderToHistory({ createdAt, name, gov, phone, shipType, shipCurrency, notes, allowSwitch, invoice });
           state.lastInvoiceText = invoice;
           els.copyInvoiceBtn.style.display = "";
           els.invoiceNote.style.display = "";
@@ -4019,12 +4255,34 @@
           els.confirmOrderBtn.textContent = "جارٍ الإرسال...";
           setCheckoutStatus("جارٍ إرسال الطلب...", false);
           try {
-            await sendToTelegram(invoice);
+            const pdfBlob = await buildOrderPdfBlob({
+              createdAt,
+              name,
+              gov,
+              phone,
+              shipType,
+              homsAddress,
+              shipCenter,
+              shipCurrency,
+              notes,
+              allowSwitch,
+            });
+            await sendPdfToTelegram(
+              pdfBlob,
+              `order-${createdAt}.pdf`,
+              `طلب جديد\n${name}\n${formatOrderDate(createdAt)}\nالإجمالي بعد الخصم: $${formatMoney(cartTotals())}`
+            );
             els.confirmOrderBtn.textContent = "تم إرسال الطلب";
             setCheckoutStatus("طلبك وصل إلينا. سوف يتم التواصل معك على واتساب قريباً.", false);
           } catch {
-            els.confirmOrderBtn.textContent = "تم تجهيز الفاتورة";
-            setCheckoutStatus("تم تجهيز الفاتورة. يمكنك نسخها وإرسالها إلينا على الواتساب.", false);
+            try {
+              await sendToTelegram(invoice);
+              els.confirmOrderBtn.textContent = "تم إرسال الطلب";
+              setCheckoutStatus("طلبك وصل إلينا. سوف يتم التواصل معك على واتساب قريباً.", false);
+            } catch {
+              els.confirmOrderBtn.textContent = "تم تجهيز الفاتورة";
+              setCheckoutStatus("تم تجهيز الفاتورة. يمكنك نسخها وإرسالها إلينا على الواتساب.", false);
+            }
           }
           await copyText(invoice);
           els.whatsappAfterOrder.style.display = "";
@@ -4092,7 +4350,7 @@
             const category = getCategoryFromAbout(about);
             const extraCategories = getExtraCategoriesFromAbout(about);
             const priceBefore = calcPriceBefore(rawPrice);
-            const priceAfter = calcPriceAfter(priceBefore, category);
+            const priceAfter = calcPriceAfter(rawPrice, category);
             const discountPercent = discountForCategory(category);
             const key = `${String(code1).trim()}::${String(code2).trim()}`;
             const search = safeLower(`${code1} ${code2} ${about}`);
