@@ -1870,8 +1870,45 @@
       <div class="toast-bubble" id="toastBubble"></div>
     </div>
 
+    <script>
+      (function () {
+        const hint = document.getElementById("hint");
+        const status = document.getElementById("status");
+        const show = (msg) => {
+          if (hint) hint.textContent = "فشل التحميل";
+          if (status) {
+            status.style.display = "";
+            status.textContent = String(msg ?? "حدث خطأ غير معروف");
+            status.setAttribute("data-error", "1");
+          }
+        };
+
+        window.__HGY_BOOTED__ = false;
+        window.addEventListener("error", (e) => {
+          try {
+            show(`خطأ بالصفحة: ${String(e?.message ?? "").trim() || "غير معروف"}`);
+          } catch {}
+        });
+        window.addEventListener("unhandledrejection", (e) => {
+          try {
+            const r = e?.reason;
+            const msg = r && typeof r === "object" && "message" in r ? String(r.message ?? "") : String(r ?? "");
+            show(`فشل التحميل: ${msg || "Promise rejection"}`);
+          } catch {}
+        });
+
+        window.setTimeout(() => {
+          if (window.__HGY_BOOTED__) return;
+          show(
+            "السكربت الرئيسي لم يبدأ. غالباً هناك خطأ Syntax في ملف HTML على GitHub أو تم رفع ملف ناقص/قديم. افتح DevTools → Console لرؤية الخطأ."
+          );
+        }, 2500);
+      })();
+    </script>
+
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
     <script>
+      window.__HGY_BOOTED__ = true;
       const reportBootError = (msg) => {
         const hint = document.getElementById("hint");
         const status = document.getElementById("status");
@@ -5063,9 +5100,9 @@
         const savedSort = String(localStorage.getItem("hjy_sort_mode_v1") ?? "").trim();
         if (savedSort) state.sortMode = savedSort;
       } catch {}
-      els.grid.setAttribute("data-view", state.viewMode);
-      els.homeGrid.setAttribute("data-view", state.viewMode);
-      els.viewSelect.value = state.viewMode;
+      if (els.grid) els.grid.setAttribute("data-view", state.viewMode);
+      if (els.homeGrid) els.homeGrid.setAttribute("data-view", state.viewMode);
+      if (els.viewSelect) els.viewSelect.value = state.viewMode;
       if (els.sortSelect) els.sortSelect.value = state.sortMode || "DEFAULT";
       updateCategoriesToggleLabel();
       updateFooterLinksVisibility();
