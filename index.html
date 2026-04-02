@@ -1870,15 +1870,82 @@
       <div class="toast-bubble" id="toastBubble"></div>
     </div>
 
+    <script>
+      (function () {
+        const hint = document.getElementById("hint");
+        const status = document.getElementById("status");
+        const show = (msg) => {
+          if (hint) hint.textContent = "فشل التحميل";
+          if (status) {
+            status.style.display = "";
+            status.textContent = String(msg ?? "حدث خطأ غير معروف");
+            status.setAttribute("data-error", "1");
+          }
+        };
+
+        window.__HGY_BOOTED__ = false;
+        window.addEventListener("error", (e) => {
+          try {
+            show(`خطأ بالصفحة: ${String(e?.message ?? "").trim() || "غير معروف"}`);
+          } catch {}
+        });
+        window.addEventListener("unhandledrejection", (e) => {
+          try {
+            const r = e?.reason;
+            const msg = r && typeof r === "object" && "message" in r ? String(r.message ?? "") : String(r ?? "");
+            show(`فشل التحميل: ${msg || "Promise rejection"}`);
+          } catch {}
+        });
+
+        window.setTimeout(() => {
+          if (window.__HGY_BOOTED__) return;
+          show(
+            "السكربت الرئيسي لم يبدأ. غالباً هناك خطأ Syntax في ملف HTML على GitHub أو تم رفع ملف ناقص/قديم. افتح DevTools → Console لرؤية الخطأ."
+          );
+        }, 2500);
+      })();
+    </script>
+
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
     <script>
+      window.__HGY_BOOTED__ = true;
+      const reportBootError = (msg) => {
+        const hint = document.getElementById("hint");
+        const status = document.getElementById("status");
+        if (hint) hint.textContent = "فشل التحميل";
+        if (status) {
+          status.style.display = "";
+          status.textContent = String(msg ?? "حدث خطأ غير معروف");
+          status.setAttribute("data-error", "1");
+        }
+      };
+
+      window.addEventListener("error", (e) => {
+        try {
+          reportBootError(`خطأ بالصفحة: ${String(e?.message ?? "").trim() || "غير معروف"}`);
+        } catch {}
+      });
+      window.addEventListener("unhandledrejection", (e) => {
+        try {
+          const r = e?.reason;
+          const msg = r && typeof r === "object" && "message" in r ? String(r.message ?? "") : String(r ?? "");
+          reportBootError(`فشل التحميل: ${msg || "Promise rejection"}`);
+        } catch {}
+      });
+
       const CONFIG = {
-        CSV_URL: "products.csv",
+        CSV_URLS: ["products.csv"],
         HOME_PRODUCTS_URLS: ["home.csv", "home"],
         ABOUT_URLS: ["about.csv", "about"],
         OUT_OF_STOCK_URLS_BY_CATEGORY: {
-          TOTAL: ["TOTAL_out_of_stock.csv", "TOTAL_out_of_stock"],
-          WADFOW: ["WADFOW_out_of_stock.csv", "WADFOW_out_of_stock"],
+          TOTAL: [
+            "TOTAL_out_of_stock.csv",
+            "TOTAL_out_of_stock",
+          ],
+          WADFOW: [
+            "WADFOW_out_of_stock.csv",
+            "WADFOW_out_of_stock",
+          ],
         },
         ITEMS_PER_PAGE: 20,
         MARKUP_RATE: 0.15,
@@ -2132,14 +2199,17 @@
         } catch {}
       }
 
-      async function fetchTextCached(url, maxAgeMs = 6 * 60 * 60 * 1000) {
+      async function fetchTextCached(url, maxAgeMs = 6 * 60 * 60 * 1000, timeoutMs = 20000) {
         const u = String(url ?? "").trim();
         if (!u) return null;
         const cacheKey = `hjy_text_cache_v1::${u}`;
         const cached = getCachedText(cacheKey, maxAgeMs);
         if (cached) return { url: u, text: cached, cached: true };
         try {
-          const res = await fetch(u, { cache: "force-cache" });
+          const controller = typeof AbortController === "function" ? new AbortController() : null;
+          const timer = controller ? window.setTimeout(() => controller.abort(), Math.max(1000, Number(timeoutMs) || 20000)) : null;
+          const res = await fetch(u, { cache: "force-cache", signal: controller ? controller.signal : undefined });
+          if (timer) window.clearTimeout(timer);
           if (!res.ok) throw new Error("Fetch failed");
           const text = await res.text();
           if (!String(text ?? "").trim()) throw new Error("Empty");
@@ -2475,12 +2545,192 @@
         return margin;
       }
 
+      const ARABIC_FORMS = {
+        "ء": ["\uFE80", "", "", ""],
+        "آ": ["\uFE81", "\uFE82", "", ""],
+        "أ": ["\uFE83", "\uFE84", "", ""],
+        "ؤ": ["\uFE85", "\uFE86", "", ""],
+        "إ": ["\uFE87", "\uFE88", "", ""],
+        "ئ": ["\uFE89", "\uFE8A", "\uFE8B", "\uFE8C"],
+        "ا": ["\uFE8D", "\uFE8E", "", ""],
+        "ب": ["\uFE8F", "\uFE90", "\uFE91", "\uFE92"],
+        "ة": ["\uFE93", "\uFE94", "", ""],
+        "ت": ["\uFE95", "\uFE96", "\uFE97", "\uFE98"],
+        "ث": ["\uFE99", "\uFE9A", "\uFE9B", "\uFE9C"],
+        "ج": ["\uFE9D", "\uFE9E", "\uFE9F", "\uFEA0"],
+        "ح": ["\uFEA1", "\uFEA2", "\uFEA3", "\uFEA4"],
+        "خ": ["\uFEA5", "\uFEA6", "\uFEA7", "\uFEA8"],
+        "د": ["\uFEA9", "\uFEAA", "", ""],
+        "ذ": ["\uFEAB", "\uFEAC", "", ""],
+        "ر": ["\uFEAD", "\uFEAE", "", ""],
+        "ز": ["\uFEAF", "\uFEB0", "", ""],
+        "س": ["\uFEB1", "\uFEB2", "\uFEB3", "\uFEB4"],
+        "ش": ["\uFEB5", "\uFEB6", "\uFEB7", "\uFEB8"],
+        "ص": ["\uFEB9", "\uFEBA", "\uFEBB", "\uFEBC"],
+        "ض": ["\uFEBD", "\uFEBE", "\uFEBF", "\uFEC0"],
+        "ط": ["\uFEC1", "\uFEC2", "\uFEC3", "\uFEC4"],
+        "ظ": ["\uFEC5", "\uFEC6", "\uFEC7", "\uFEC8"],
+        "ع": ["\uFEC9", "\uFECA", "\uFECB", "\uFECC"],
+        "غ": ["\uFECD", "\uFECE", "\uFECF", "\uFED0"],
+        "ف": ["\uFED1", "\uFED2", "\uFED3", "\uFED4"],
+        "ق": ["\uFED5", "\uFED6", "\uFED7", "\uFED8"],
+        "ك": ["\uFED9", "\uFEDA", "\uFEDB", "\uFEDC"],
+        "ل": ["\uFEDD", "\uFEDE", "\uFEDF", "\uFEE0"],
+        "م": ["\uFEE1", "\uFEE2", "\uFEE3", "\uFEE4"],
+        "ن": ["\uFEE5", "\uFEE6", "\uFEE7", "\uFEE8"],
+        "ه": ["\uFEE9", "\uFEEA", "\uFEEB", "\uFEEC"],
+        "و": ["\uFEED", "\uFEEE", "", ""],
+        "ى": ["\uFEEF", "\uFEF0", "", ""],
+        "ي": ["\uFEF1", "\uFEF2", "\uFEF3", "\uFEF4"],
+        "پ": ["\uFB56", "\uFB57", "\uFB58", "\uFB59"],
+        "چ": ["\uFB7A", "\uFB7B", "\uFB7C", "\uFB7D"],
+        "ژ": ["\uFB8A", "\uFB8B", "", ""],
+        "گ": ["\uFB92", "\uFB93", "\uFB94", "\uFB95"],
+        "ک": ["\uFB8E", "\uFB8F", "\uFB90", "\uFB91"],
+        "ی": ["\uFBFC", "\uFBFD", "\uFBFE", "\uFBFF"],
+      };
+
+      const LAM_ALEF_LIGS = {
+        "ا": ["\uFEFB", "\uFEFC"],
+        "أ": ["\uFEF7", "\uFEF8"],
+        "إ": ["\uFEF9", "\uFEFA"],
+        "آ": ["\uFEF5", "\uFEF6"],
+      };
+
+      function isArabicMark(ch) {
+        const c = ch.charCodeAt(0);
+        return (
+          (c >= 0x064b && c <= 0x065f) ||
+          c === 0x0670 ||
+          (c >= 0x06d6 && c <= 0x06ed)
+        );
+      }
+
+      function isArabicVisualChar(ch) {
+        const c = ch.charCodeAt(0);
+        return (
+          (c >= 0x0600 && c <= 0x06ff) ||
+          (c >= 0x0750 && c <= 0x077f) ||
+          (c >= 0xfb50 && c <= 0xfdff) ||
+          (c >= 0xfe70 && c <= 0xfeff)
+        );
+      }
+
+      function arabicShape(text) {
+        const s = String(text ?? "");
+        if (!s) return s;
+        const chars = Array.from(s);
+        const prevNonMarkIndex = (i) => {
+          for (let j = i - 1; j >= 0; j--) if (!isArabicMark(chars[j])) return j;
+          return -1;
+        };
+        const nextNonMarkIndex = (i) => {
+          for (let j = i + 1; j < chars.length; j++) if (!isArabicMark(chars[j])) return j;
+          return -1;
+        };
+
+        const canConnectToPrev = (ch) => {
+          const f = ARABIC_FORMS[ch];
+          return Boolean(f && f[1]);
+        };
+        const canConnectToNext = (ch) => {
+          const f = ARABIC_FORMS[ch];
+          return Boolean(f && f[2] && f[3]);
+        };
+
+        let out = "";
+        for (let i = 0; i < chars.length; i++) {
+          const ch = chars[i];
+          if (isArabicMark(ch)) {
+            out += ch;
+            continue;
+          }
+
+          if (ch === "ل") {
+            const ni = nextNonMarkIndex(i);
+            const next = ni >= 0 ? chars[ni] : "";
+            const lig = LAM_ALEF_LIGS[next];
+            if (lig) {
+              const pi = prevNonMarkIndex(i);
+              const prev = pi >= 0 ? chars[pi] : "";
+              const connectedPrev = canConnectToNext(prev) && canConnectToPrev(ch);
+              out += connectedPrev ? lig[1] : lig[0];
+              if (ni === i + 1) i += 1;
+              else if (ni > i) chars[ni] = "";
+              continue;
+            }
+          }
+
+          const f = ARABIC_FORMS[ch];
+          if (!f) {
+            out += ch;
+            continue;
+          }
+
+          const pi = prevNonMarkIndex(i);
+          const ni = nextNonMarkIndex(i);
+          const prev = pi >= 0 ? chars[pi] : "";
+          const next = ni >= 0 ? chars[ni] : "";
+          const connectedPrev = prev && canConnectToNext(prev) && canConnectToPrev(ch);
+          const connectedNext = next && canConnectToPrev(next) && canConnectToNext(ch);
+
+          if (connectedPrev && connectedNext && f[3]) out += f[3];
+          else if (connectedPrev && f[1]) out += f[1];
+          else if (connectedNext && f[2]) out += f[2];
+          else out += f[0] || ch;
+        }
+        return out;
+      }
+
+      function rtlVisualize(text) {
+        const shaped = arabicShape(text);
+        const swap = (ch) => {
+          if (ch === "(") return ")";
+          if (ch === ")") return "(";
+          if (ch === "[") return "]";
+          if (ch === "]") return "[";
+          if (ch === "{") return "}";
+          if (ch === "}") return "{";
+          if (ch === "<") return ">";
+          if (ch === ">") return "<";
+          return ch;
+        };
+
+        const runs = [];
+        let cur = "";
+        let curIsAr = null;
+        for (const ch of Array.from(shaped)) {
+          const isAr = isArabicVisualChar(ch);
+          if (curIsAr === null) {
+            curIsAr = isAr;
+            cur = ch;
+            continue;
+          }
+          if (isAr === curIsAr) cur += ch;
+          else {
+            runs.push({ isAr: curIsAr, text: cur });
+            curIsAr = isAr;
+            cur = ch;
+          }
+        }
+        if (cur) runs.push({ isAr: curIsAr, text: cur });
+
+        runs.reverse();
+        let out = "";
+        for (const r of runs) {
+          if (r.isAr) out += Array.from(r.text).reverse().map(swap).join("");
+          else out += r.text;
+        }
+        return out;
+      }
+
       function pdfWriteRtl(doc, text, xRight, y, maxWidth, fontSize) {
         const t = String(text ?? "").trim();
         if (!t) return y;
         doc.setFontSize(fontSize);
         const lines = doc.splitTextToSize(t, maxWidth);
-        doc.text(lines, xRight, y, { align: "right" });
+        const visual = Array.isArray(lines) ? lines.map((ln) => rtlVisualize(String(ln ?? ""))) : [rtlVisualize(String(lines ?? ""))];
+        doc.text(visual, xRight, y, { align: "right" });
         return y + pdfLineHeight(doc, fontSize) * lines.length;
       }
 
@@ -2720,6 +2970,10 @@
           shipCurrency: String(details.shipCurrency ?? "").trim(),
           notes: String(details.notes ?? "").trim(),
           allowSwitch: Boolean(details.allowSwitch),
+          allowFamilySwitch: Boolean(details.allowFamilySwitch),
+          enableAlt: Boolean(details.enableAlt),
+          altOriginalCode: String(details.altOriginalCode ?? "").trim(),
+          altCodes: Array.isArray(details.altCodes) ? details.altCodes.map((x) => String(x ?? "").trim()).filter(Boolean).slice(0, 10) : [],
           totalBefore: cartTotalsBefore(),
           total: cartTotals(),
           items: Array.from(state.cart.values()).map((it) => ({
@@ -3661,7 +3915,6 @@
         }
         if (notes) lines.push(`ملاحظات الطلب: ${notes}`);
         lines.push(`بديل توتال إلى وادفو عند عدم توفره: ${allowSwitch ? "نعم" : "لا"}`);
-        lines.push(`لا أمانع من تبديل منتج بأقرب متوفر من نفس العائلة: ${allowFamilySwitch ? "نعم" : "لا"}`);
         lines.push("");
         lines.push("ملخص الفاتورة:");
         const beforeTotal = Number(cartTotalsBefore()) || 0;
@@ -3859,7 +4112,6 @@
           writeRtl("ملاحظة: سيتم تطبيق زيادة + 1.5 ل.س جديدة لسعر صرف لحظة الإرسال بسبب تذبذب الصرف", 11, 1.5);
         writeRtl(`طريقة الاستلام: ${shipLine}`, 12, 1);
         writeRtl(`بديل توتال إلى وادفو عند عدم توفره: ${allowSwitch ? "نعم" : "لا"}`, 12, 1.5);
-        writeRtl(`لا أمانع من تبديل منتج بأقرب متوفر من نفس العائلة: ${allowFamilySwitch ? "نعم" : "لا"}`, 12, 1.5);
         if (notes) writeRtl(`ملاحظات: ${notes}`, 12, 2);
 
         writeRtl("ملخص الفاتورة:", 13, 1.5);
@@ -4597,6 +4849,13 @@
       }
 
       async function loadProducts() {
+        if (location.hostname === "github.com" && String(location.pathname || "").includes("/blob/")) {
+          els.hint.textContent = "لن تعمل الصفحة داخل GitHub";
+          setStatus("افتح الملف عبر GitHub Pages أو اضغط Raw ثم افتح الصفحة. GitHub (blob) يرجع HTML بدل CSV فيتجمد التحميل.", true);
+          els.grid.innerHTML = "";
+          setHomeStatus("افتح الصفحة عبر GitHub Pages.", true);
+          return;
+        }
         const loadingText = "جاري تحميل الصفحة";
         const slowNote = "الصفحة تحمل ببطء لقد شارفت على الانتهاء\nتأكد من سرعة الأنترنيت لديك";
         els.hint.textContent = `${loadingText}...`;
@@ -4607,22 +4866,58 @@
         }, 1800);
         try {
           await Promise.all([loadInfoPages(), loadOutOfStockSet()]);
-          const got = await fetchTextCached(CONFIG.CSV_URL, 6 * 60 * 60 * 1000);
+          let got = null;
+          let lastErr = "";
+          for (const u of CONFIG.CSV_URLS || []) {
+            const url = String(u ?? "").trim();
+            if (!url) continue;
+            try {
+              const controller = typeof AbortController === "function" ? new AbortController() : null;
+              const timer = controller ? window.setTimeout(() => controller.abort(), 20000) : null;
+              const res = await fetch(url, { cache: "no-store", signal: controller ? controller.signal : undefined });
+              if (timer) window.clearTimeout(timer);
+              if (!res.ok) {
+                lastErr = `HTTP ${res.status} عند تحميل ${url}`;
+                continue;
+              }
+              const text = await res.text();
+              if (!String(text ?? "").trim()) {
+                lastErr = `ملف فارغ: ${url}`;
+                continue;
+              }
+              got = { url, text };
+              break;
+            } catch (e) {
+              lastErr = `${String(e?.name ?? "Error")}: ${String(e?.message ?? e ?? "")}`.trim() || "Fetch error";
+            }
+          }
           if (!got) {
             els.hint.textContent = "فشل التحميل";
-            setStatus("فشل تحميل products.csv. تأكد أن الملف موجود بنفس المجلد على GitHub Pages وبنفس الاسم.", true);
+            setStatus(
+              `فشل تحميل products.csv. ${lastErr ? `(${lastErr}) ` : ""}تأكد أن products.csv موجود بنفس مجلد index.html على GitHub Pages وبنفس الاسم.`,
+              true
+            );
             els.grid.innerHTML = "";
             setHomeStatus("فشل تحميل المنتجات.", true);
             return;
           }
           const data = String(got.text ?? "");
+          const head = data.slice(0, 250).toLowerCase();
+          if (head.includes("<!doctype html") || head.includes("<html")) throw new Error("Wrong content (HTML)");
           const lines = data.split(/\r?\n/).filter((l) => l.trim().length > 0);
-          if (lines.length <= 1) throw new Error("Empty CSV");
+          if (lines.length === 0) throw new Error("Empty CSV");
 
-          const headerLine = String(lines[0] ?? "").replace(/^\uFEFF/, "");
-          const delimiter = detectCsvDelimiter(headerLine);
+          const firstLine = String(lines[0] ?? "").replace(/^\uFEFF/, "");
+          const delimiter = detectCsvDelimiter(firstLine);
+          const firstCols = parseCsvLine(firstLine, delimiter).map((x) => safeLower(cleanCell(x)));
+          const hasHeader =
+            firstCols.some((h) => h.includes("code1")) ||
+            firstCols.some((h) => h.includes("code2")) ||
+            firstCols.some((h) => h.includes("about"));
+          const startIdx = hasHeader ? 1 : 0;
+          if (lines.length - startIdx <= 0) throw new Error("Empty CSV");
           const products = [];
-          for (let i = 1; i < lines.length; i++) {
+          for (let i = startIdx; i < lines.length; i++) {
             const colsRaw = parseCsvLine(lines[i], delimiter);
             const cols = normalizeCsvRow(colsRaw, delimiter, 5).map(cleanCell);
             const code1 = cols[0] ?? "";
@@ -4677,7 +4972,7 @@
           renderHome();
         } catch (e) {
           els.hint.textContent = "فشل التحميل";
-          setStatus("فشل تحميل products.csv. تأكد أن الملف موجود بنفس المجلد على GitHub Pages وبنفس الاسم.", true);
+          setStatus("فشل تحميل products.csv أو تم تحميل ملف غير صحيح. تأكد أنك على GitHub Pages وأن products.csv بجانب index.html.", true);
           els.grid.innerHTML = "";
           setHomeStatus("فشل تحميل المنتجات.", true);
         }
@@ -4828,17 +5123,21 @@
         const savedSort = String(localStorage.getItem("hjy_sort_mode_v1") ?? "").trim();
         if (savedSort) state.sortMode = savedSort;
       } catch {}
-      els.grid.setAttribute("data-view", state.viewMode);
-      els.homeGrid.setAttribute("data-view", state.viewMode);
-      els.viewSelect.value = state.viewMode;
+      if (els.grid) els.grid.setAttribute("data-view", state.viewMode);
+      if (els.homeGrid) els.homeGrid.setAttribute("data-view", state.viewMode);
+      if (els.viewSelect) els.viewSelect.value = state.viewMode;
       if (els.sortSelect) els.sortSelect.value = state.sortMode || "DEFAULT";
       updateCategoriesToggleLabel();
       updateFooterLinksVisibility();
       window.addEventListener("hashchange", applyHashRoute);
-      loadProducts().then(() => {
-        if (!location.hash) setHash("home");
-        applyHashRoute();
-      });
+      loadProducts()
+        .then(() => {
+          if (!location.hash) setHash("home");
+          applyHashRoute();
+        })
+        .catch((e) => {
+          reportBootError(String(e?.message ?? e ?? "فشل تحميل المنتجات"));
+        });
       renderCart();
     </script>
   </body>
