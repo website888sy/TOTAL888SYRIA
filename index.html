@@ -4188,8 +4188,6 @@
         pdf.addFileToVFS(PDF_FONT.vfsName, base64);
         pdf.addFont(PDF_FONT.vfsName, PDF_FONT.family, "normal");
         pdf.setFont(PDF_FONT.family, "normal");
-        const supportsR2L = typeof pdf.setR2L === "function";
-
         const xLeft = margin;
         const beforeTotal = Number(cartTotalsBefore()) || 0;
         const afterTotal = Number(cartTotals()) || 0;
@@ -4211,16 +4209,13 @@
         };
 
         const pdfTextRtl = (lines, x, y, opts) => {
-          if (supportsR2L) pdf.setR2L(true);
           pdf.text(lines, x, y, opts);
-          if (supportsR2L) pdf.setR2L(false);
         };
 
         const toArabicPdfText = (input) => {
           const raw = String(input ?? "").trim();
           if (!raw) return "";
           const shaped = shapeArabicForPdf(raw);
-          if (supportsR2L) return shaped;
           const isArabicLike = (ch) => /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(ch);
           const chars = Array.from(shaped);
           const runs = [];
@@ -4260,7 +4255,6 @@
         const writeLtr = (text, x, y, w, size, color = C.text, align = "left") => {
           const t = String(text ?? "").trim();
           if (!t) return { y, lines: [] };
-          if (supportsR2L) pdf.setR2L(false);
           pdf.setTextColor(...color);
           pdf.setFontSize(size);
           const lines = pdf.splitTextToSize(t, Math.max(1, w));
