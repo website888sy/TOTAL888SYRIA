@@ -2816,8 +2816,9 @@
           if (!g || typeof g !== "object") continue;
           const original = String(g.original ?? "").trim();
           const altsRaw = Array.isArray(g.alts) ? g.alts : [];
-          const alts = altsRaw.map((x) => String(x ?? "").trim()).filter(Boolean).slice(0, 5);
-          out.push({ original, alts: alts.length > 0 ? alts : ["", ""] });
+          const trimmed = altsRaw.map((x) => String(x ?? "").trim()).slice(0, 5);
+          const alts = trimmed.length >= 2 ? trimmed : [...trimmed, ...Array(2 - trimmed.length).fill("")];
+          out.push({ original, alts });
         }
         if (out.length === 0) out.push({ original: "", alts: ["", ""] });
         return out.slice(0, 25);
@@ -2878,7 +2879,6 @@
           const altInputs = Array.from(node.querySelectorAll("input[data-alt-code]"));
           const alts = altInputs
             .map((x) => (x instanceof HTMLInputElement ? String(x.value ?? "").trim() : ""))
-            .filter(Boolean)
             .slice(0, 5);
           groups.push({ original, alts });
         }
@@ -4040,14 +4040,11 @@
         try {
           const base64 = await loadPdfFontBase64();
           pdf.addFileToVFS(PDF_FONT.vfsName, base64);
-          pdf.addFont(PDF_FONT.vfsName, PDF_FONT.family, "normal", "Identity-H");
+          pdf.addFont(PDF_FONT.vfsName, PDF_FONT.family, "normal");
           pdf.setFont(PDF_FONT.family, "normal");
         } catch {
           pdf.setFont("helvetica", "normal");
         }
-        try {
-          if (typeof pdf.setR2L === "function") pdf.setR2L(true);
-        } catch {}
 
         const xLeft = margin;
         const beforeTotal = Number(cartTotalsBefore()) || 0;
@@ -4070,7 +4067,7 @@
         };
 
         const writeRtl = (text, x, y, w, size, color = C.text) => {
-          const t = shapeArabicForPdf(String(text ?? "").trim());
+          const t = String(text ?? "").trim();
           if (!t) return { y, lines: [] };
           pdf.setTextColor(...color);
           pdf.setFontSize(size);
@@ -4092,8 +4089,8 @@
         const drawTopHeader = (y) => {
           pdf.setTextColor(...C.muted);
           pdf.setFontSize(9);
-          pdf.text(shapeArabicForPdf(`تاريخ ووقت الإصدار: ${formatOrderDate(createdAt)}`), xRight, y, { align: "right", lang: "ar" });
-          pdf.text(shapeArabicForPdf("فاتورة"), xLeft, y, { align: "left", lang: "ar" });
+          pdf.text(`تاريخ ووقت الإصدار: ${formatOrderDate(createdAt)}`, xRight, y, { align: "right", lang: "ar" });
+          pdf.text("فاتورة", xLeft, y, { align: "left", lang: "ar" });
           y += 8;
           pdf.setTextColor(...C.primaryDark);
           pdf.setFontSize(20);
@@ -4101,7 +4098,7 @@
           y += 7;
           pdf.setTextColor(...C.muted);
           pdf.setFontSize(10);
-          pdf.text(shapeArabicForPdf("شركة توتال سوريا"), pageWidth / 2, y, { align: "center", lang: "ar" });
+          pdf.text("شركة توتال سوريا", pageWidth / 2, y, { align: "center", lang: "ar" });
           return y + 8;
         };
 
@@ -4234,8 +4231,8 @@
           const altsText = alts.length ? `بدائل: ${alts.join(" , ")}` : "";
 
           pdf.setFontSize(fontBody);
-          const aboutLines = pdf.splitTextToSize(shapeArabicForPdf(about || "—"), cols.find((c) => c.key === "about").w - cellPadX * 2);
-          const altsLines = pdf.splitTextToSize(shapeArabicForPdf(altsText), cols.find((c) => c.key === "alts").w - cellPadX * 2);
+          const aboutLines = pdf.splitTextToSize(about || "—", cols.find((c) => c.key === "about").w - cellPadX * 2);
+          const altsLines = pdf.splitTextToSize(altsText, cols.find((c) => c.key === "alts").w - cellPadX * 2);
           const linesCount = Math.max(aboutLines.length, altsLines.length, 1);
           const rowH = Math.max(8, pdfLineHeight(pdf, fontBody) * linesCount + 4);
 
