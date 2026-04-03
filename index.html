@@ -849,6 +849,34 @@
         background: rgba(255, 255, 255, 0.75);
       }
 
+      .field-row {
+        display: flex;
+        gap: 8px;
+        align-items: stretch;
+      }
+
+      .field-row > input,
+      .field-row > textarea {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .field-clear {
+        width: 44px;
+        min-width: 44px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.9);
+        font-weight: 900;
+        color: var(--muted);
+        cursor: pointer;
+      }
+
+      .field-clear:hover {
+        color: var(--text);
+        border-color: rgba(10, 163, 163, 0.35);
+      }
+
       .choice-row {
         display: flex;
         gap: 10px;
@@ -1682,22 +1710,38 @@
             <form id="checkoutForm" style="display:grid;gap:10px;max-width:520px;margin-inline:auto">
               <label style="display:grid;gap:6px">
                 <span style="font-weight:800">اسم ثلاثي</span>
-                <input id="fullNameInput" type="text" autocomplete="name" required style="padding:12px;border:1px solid var(--border);border-radius:12px" />
+                <div class="field-row">
+                  <input id="fullNameInput" type="text" autocomplete="name" required style="padding:12px;border:1px solid var(--border);border-radius:12px" />
+                  <button class="field-clear" type="button" data-clear="fullNameInput" aria-label="حذف">×</button>
+                </div>
               </label>
               <label style="display:grid;gap:6px">
                 <span style="font-weight:800">المحافظة</span>
-                <input
-                  id="govInput"
-                  type="text"
-                  autocomplete="address-level1"
-                  required
-                  placeholder="اكتب المحافظة"
-                  style="padding:12px;border:1px solid var(--border);border-radius:12px"
-                />
+                <div class="field-row">
+                  <input
+                    id="govInput"
+                    type="text"
+                    autocomplete="address-level1"
+                    required
+                    placeholder="اكتب المحافظة"
+                    style="padding:12px;border:1px solid var(--border);border-radius:12px"
+                  />
+                  <button class="field-clear" type="button" data-clear="govInput" aria-label="حذف">×</button>
+                </div>
               </label>
               <label style="display:grid;gap:6px">
                 <span style="font-weight:800">رقم الهاتف</span>
-                <input id="phoneInput" type="tel" inputmode="tel" autocomplete="tel" required style="padding:12px;border:1px solid var(--border);border-radius:12px;direction:ltr;unicode-bidi:plaintext" />
+                <div class="field-row">
+                  <input
+                    id="phoneInput"
+                    type="tel"
+                    inputmode="tel"
+                    autocomplete="tel"
+                    required
+                    style="padding:12px;border:1px solid var(--border);border-radius:12px;direction:ltr;unicode-bidi:plaintext"
+                  />
+                  <button class="field-clear" type="button" data-clear="phoneInput" aria-label="حذف">×</button>
+                </div>
               </label>
               <div class="checkout-choices">
                 <div class="choice-row" role="group" aria-label="طريقة الاستلام">
@@ -1714,7 +1758,10 @@
                   <div class="mini-note">تصلك مجاناً إلى موقعك</div>
                   <label style="display:grid;gap:6px">
                     <span style="font-weight:800">عنوان ضمن حمص</span>
-                    <input id="homsAddressInput" type="text" autocomplete="street-address" style="padding:12px;border:1px solid var(--border);border-radius:12px" />
+                    <div class="field-row">
+                      <input id="homsAddressInput" type="text" autocomplete="street-address" style="padding:12px;border:1px solid var(--border);border-radius:12px" />
+                      <button class="field-clear" type="button" data-clear="homsAddressInput" aria-label="حذف">×</button>
+                    </div>
                   </label>
                 </div>
                 <div id="shipGovBlock" style="display:grid;gap:8px">
@@ -1722,7 +1769,10 @@
                   <button class="footer-link" id="shipDetailsBtn" type="button">أنا أول مرة أشحن ماهي تفاصيل؟</button>
                   <label style="display:grid;gap:6px">
                     <span style="font-weight:800">عنوان مركز الشحن</span>
-                    <input id="shipCenterInput" type="text" autocomplete="street-address" style="padding:12px;border:1px solid var(--border);border-radius:12px" />
+                    <div class="field-row">
+                      <input id="shipCenterInput" type="text" autocomplete="street-address" style="padding:12px;border:1px solid var(--border);border-radius:12px" />
+                      <button class="field-clear" type="button" data-clear="shipCenterInput" aria-label="حذف">×</button>
+                    </div>
                   </label>
                   <div style="display:flex;gap:10px;flex-wrap:wrap">
                     <button class="btn btn-ghost" id="masaratBranchesBtn" type="button" style="flex:1">فروع مسارات</button>
@@ -1736,7 +1786,14 @@
               </div>
               <label style="display:grid;gap:6px">
                 <span style="font-weight:800">ملاحظات الطلب</span>
-                <textarea id="orderNotesInput" placeholder="اكتب أي ملاحظة تخص الطلب..." style="padding:12px;border:1px solid var(--border);border-radius:12px;font-family:inherit;font-size:13px;min-height:110px;resize:vertical"></textarea>
+                <div class="field-row">
+                  <textarea
+                    id="orderNotesInput"
+                    placeholder="اكتب أي ملاحظة تخص الطلب..."
+                    style="padding:12px;border:1px solid var(--border);border-radius:12px;font-family:inherit;font-size:13px;min-height:110px;resize:vertical"
+                  ></textarea>
+                  <button class="field-clear" type="button" data-clear="orderNotesInput" aria-label="حذف">×</button>
+                </div>
               </label>
               <div style="display:grid;gap:8px">
                 <label class="checkrow">
@@ -1779,6 +1836,7 @@
                 <div id="altGroupsList" style="display:grid;gap:10px"></div>
                 <div id="altPreview" style="display:grid;gap:10px"></div>
               </div>
+              <datalist id="cartCodesDatalist"></datalist>
               <div style="display:flex;gap:10px;flex-wrap:wrap">
                 <button class="btn btn-primary" id="confirmOrderBtn" type="submit" style="flex:1">إتمام الطلب</button>
                 <button class="btn btn-ghost" id="copyInvoiceBtn" type="button" style="flex:1;display:none">نسخ الفاتورة</button>
@@ -2450,19 +2508,39 @@
       }
 
       const PDF_FONT = {
-        url: "https://raw.githubusercontent.com/google/fonts/main/ofl/cairo/Cairo-Regular.ttf",
+        urls: [
+          "https://db.onlinewebfonts.com/t/157ad1135ef04af4b68096015987c5eb.ttf",
+          "https://raw.githubusercontent.com/google/fonts/main/ofl/cairo/Cairo-Regular.ttf",
+        ],
         vfsName: "Cairo-Regular.ttf",
         family: "Cairo",
+        cacheKey: "hjy_pdf_font_cairo_base64_v1",
       };
 
       let pdfFontBase64Promise = null;
       async function loadPdfFontBase64() {
         if (pdfFontBase64Promise) return pdfFontBase64Promise;
         pdfFontBase64Promise = (async () => {
-          const res = await fetch(PDF_FONT.url, { cache: "force-cache" });
-          if (!res.ok) throw new Error("Font fetch failed");
-          const ab = await res.arrayBuffer();
-          return arrayBufferToBase64(ab);
+          try {
+            const cached = String(localStorage.getItem(PDF_FONT.cacheKey) ?? "");
+            if (cached && cached.length > 1000) return cached;
+          } catch {}
+          for (const url of Array.isArray(PDF_FONT.urls) ? PDF_FONT.urls : []) {
+            try {
+              const ctrl = new AbortController();
+              const t = setTimeout(() => ctrl.abort(), 12000);
+              const res = await fetch(String(url), { cache: "force-cache", signal: ctrl.signal });
+              clearTimeout(t);
+              if (!res.ok) continue;
+              const ab = await res.arrayBuffer();
+              const b64 = arrayBufferToBase64(ab);
+              try {
+                localStorage.setItem(PDF_FONT.cacheKey, b64);
+              } catch {}
+              return b64;
+            } catch {}
+          }
+          throw new Error("Font fetch failed");
         })();
         return pdfFontBase64Promise;
       }
@@ -2841,6 +2919,15 @@
         const normalized = normalizeAltGroups(groups);
         state.altGroupsDraft = normalized;
         let html = "";
+        const codes = [];
+        for (const it of state.cart?.values ? state.cart.values() : []) {
+          const p = it?.product;
+          if (!p) continue;
+          const c1 = String(p.code1 ?? "").trim();
+          const c2 = String(p.code2 ?? "").trim();
+          if (c1) codes.push(c1);
+          if (c2) codes.push(c2);
+        }
         for (let gi = 0; gi < normalized.length; gi++) {
           const g = normalized[gi];
           const alts = Array.isArray(g.alts) ? g.alts : [];
@@ -2854,7 +2941,15 @@
               </div>
               <label style="display:grid;gap:6px">
                 <span style="font-weight:800">الكود الاصلي بالفاتورة</span>
-                <input data-alt-original="1" type="text" value="${escapeHtmlAttr(g.original)}" style="padding:12px;border:1px solid var(--border);border-radius:12px;direction:ltr;unicode-bidi:plaintext" />
+                <input
+                  data-alt-original="1"
+                  type="text"
+                  inputmode="text"
+                  list="cartCodesDatalist"
+                  value="${escapeHtmlAttr(g.original)}"
+                  placeholder="${codes.length ? "اختر من السلة أو اكتب الكود" : "اكتب الكود"}"
+                  style="padding:12px;border:1px solid var(--border);border-radius:12px;direction:ltr;unicode-bidi:plaintext"
+                />
               </label>
               <div style="display:grid;gap:10px" data-alt-list="1">`;
           for (let ai = 0; ai < alts.length; ai++) {
@@ -2866,6 +2961,7 @@
           html += `</div></div>`;
         }
         els.altGroupsList.innerHTML = html;
+        updateCartCodesDatalist();
       }
 
       function readAltGroupsFromDom() {
@@ -2874,8 +2970,11 @@
         const nodes = Array.from(els.altGroupsList.querySelectorAll("[data-alt-group]"));
         for (const node of nodes) {
           if (!(node instanceof HTMLElement)) continue;
-          const originalInput = node.querySelector("input[data-alt-original]");
-          const original = originalInput instanceof HTMLInputElement ? String(originalInput.value ?? "").trim() : "";
+          const originalInput = node.querySelector("[data-alt-original]");
+          const original =
+            originalInput instanceof HTMLInputElement || originalInput instanceof HTMLSelectElement
+              ? String(originalInput.value ?? "").trim()
+              : "";
           const altInputs = Array.from(node.querySelectorAll("input[data-alt-code]"));
           const alts = altInputs
             .map((x) => (x instanceof HTMLInputElement ? String(x.value ?? "").trim() : ""))
@@ -2883,6 +2982,25 @@
           groups.push({ original, alts });
         }
         return normalizeAltGroups(groups);
+      }
+
+      function updateCartCodesDatalist() {
+        const dl = document.getElementById("cartCodesDatalist");
+        if (!(dl instanceof HTMLDataListElement)) return;
+        const seen = new Set();
+        let html = "";
+        for (const it of state.cart?.values ? state.cart.values() : []) {
+          const p = it?.product;
+          if (!p) continue;
+          const raw = [p.code1, p.code2].filter(Boolean);
+          for (const c of raw) {
+            const v = String(c ?? "").trim();
+            if (!v || seen.has(v)) continue;
+            seen.add(v);
+            html += `<option value="${escapeHtmlAttr(v)}"></option>`;
+          }
+        }
+        dl.innerHTML = html;
       }
 
       function buildAltPreviewData(groups) {
@@ -3430,6 +3548,7 @@
             meetsMin ? "" : "disabled"
           }>إتمام الطلب</button>
         `;
+        updateCartCodesDatalist();
       }
 
       async function copyText(text) {
@@ -4037,14 +4156,10 @@
         const xRight = pageWidth - margin;
         const maxWidth = pageWidth - margin * 2;
 
-        try {
-          const base64 = await loadPdfFontBase64();
-          pdf.addFileToVFS(PDF_FONT.vfsName, base64);
-          pdf.addFont(PDF_FONT.vfsName, PDF_FONT.family, "normal");
-          pdf.setFont(PDF_FONT.family, "normal");
-        } catch {
-          pdf.setFont("helvetica", "normal");
-        }
+        const base64 = await loadPdfFontBase64();
+        pdf.addFileToVFS(PDF_FONT.vfsName, base64);
+        pdf.addFont(PDF_FONT.vfsName, PDF_FONT.family, "normal");
+        pdf.setFont(PDF_FONT.family, "normal");
 
         const xLeft = margin;
         const beforeTotal = Number(cartTotalsBefore()) || 0;
@@ -4066,13 +4181,14 @@
           headerBg: [10, 163, 163],
         };
 
-        const writeRtl = (text, x, y, w, size, color = C.text) => {
-          const t = String(text ?? "").trim();
+        const rtlTextOpts = { lang: "ar", isInputRtl: true, isOutputRtl: true, isInputVisual: false, isOutputVisual: true, isSymmetricSwapping: true };
+        const writeRtl = (text, x, y, w, size, color = C.text, align = "right") => {
+          const t = shapeArabicForPdf(String(text ?? "").trim());
           if (!t) return { y, lines: [] };
           pdf.setTextColor(...color);
           pdf.setFontSize(size);
           const lines = pdf.splitTextToSize(t, Math.max(1, w));
-          pdf.text(lines, x, y, { align: "right", lang: "ar" });
+          pdf.text(lines, x, y, { align, ...rtlTextOpts });
           return { y: y + pdfLineHeight(pdf, size) * lines.length, lines };
         };
 
@@ -4089,8 +4205,8 @@
         const drawTopHeader = (y) => {
           pdf.setTextColor(...C.muted);
           pdf.setFontSize(9);
-          pdf.text(`تاريخ ووقت الإصدار: ${formatOrderDate(createdAt)}`, xRight, y, { align: "right", lang: "ar" });
-          pdf.text("فاتورة", xLeft, y, { align: "left", lang: "ar" });
+          pdf.text(shapeArabicForPdf(`تاريخ ووقت الإصدار: ${formatOrderDate(createdAt)}`), xRight, y, { align: "right", ...rtlTextOpts });
+          pdf.text(shapeArabicForPdf("فاتورة"), xLeft, y, { align: "left", ...rtlTextOpts });
           y += 8;
           pdf.setTextColor(...C.primaryDark);
           pdf.setFontSize(20);
@@ -4098,7 +4214,7 @@
           y += 7;
           pdf.setTextColor(...C.muted);
           pdf.setFontSize(10);
-          pdf.text("شركة توتال سوريا", pageWidth / 2, y, { align: "center", lang: "ar" });
+          pdf.text(shapeArabicForPdf("شركة توتال سوريا"), pageWidth / 2, y, { align: "center", ...rtlTextOpts });
           return y + 8;
         };
 
@@ -4127,7 +4243,7 @@
         cy = writeRtl(`طريقة الاستلام: ${shipLine || "—"}`, rightColX - 6, cy, colW - 12, 11, C.muted).y;
 
         let ly = y + 8;
-        ly = writeRtl("رقم الهاتف:", leftColX - 6, ly, colW - 12, 12).y;
+        ly = writeRtl("رقم الهاتف:", leftColX - 6, ly, colW - 12, 12, C.text, "right").y;
         ly = writeLtr(phone || "—", margin + 6, ly - 0.5, colW - 12, 12, C.text, "left").y;
         ly = writeRtl(`الدفع: ${shipCurrency || "—"}`, leftColX - 6, ly, colW - 12, 12).y;
 
@@ -4228,11 +4344,17 @@
           const lineAfter = qty * unitAfter;
           const about = String(p.about ?? "").trim();
           const alts = altCodesByCartKey.get(productKey(p)) || [];
-          const altsText = alts.length ? `بدائل: ${alts.join(" , ")}` : "";
+          const altsText = alts.length ? `بدائل:\n${alts.join("\n")}` : "";
 
           pdf.setFontSize(fontBody);
-          const aboutLines = pdf.splitTextToSize(about || "—", cols.find((c) => c.key === "about").w - cellPadX * 2);
-          const altsLines = pdf.splitTextToSize(altsText, cols.find((c) => c.key === "alts").w - cellPadX * 2);
+          const aboutLines = pdf.splitTextToSize(
+            shapeArabicForPdf(about || "—"),
+            cols.find((c) => c.key === "about").w - cellPadX * 2
+          );
+          const altsLines = pdf.splitTextToSize(
+            shapeArabicForPdf(altsText),
+            cols.find((c) => c.key === "alts").w - cellPadX * 2
+          );
           const linesCount = Math.max(aboutLines.length, altsLines.length, 1);
           const rowH = Math.max(8, pdfLineHeight(pdf, fontBody) * linesCount + 4);
 
@@ -4251,7 +4373,7 @@
               writeLtr(String(p.code2 || ""), cx + cellPadX, topY, c.w - cellPadX * 2, fontBody, C.muted, "left");
             } else if (c.key === "about") {
               pdf.setTextColor(...C.text);
-              pdf.text(aboutLines, cx + c.w - cellPadX, topY, { align: "right", lang: "ar" });
+              pdf.text(aboutLines, cx + c.w - cellPadX, topY, { align: "right", ...rtlTextOpts });
             } else if (c.key === "qty") {
               writeLtr(String(qty), cx + c.w / 2, topY, c.w - 2, fontBody, C.text, "center");
             } else if (c.key === "unitAfter") {
@@ -4266,7 +4388,7 @@
               writeLtr(`$${formatMoney(lineBefore)}`, cx + c.w - cellPadX, topY, c.w - 2, fontBody, C.muted, "right");
             } else if (c.key === "alts") {
               pdf.setTextColor(...C.muted);
-              pdf.text(altsLines, cx + c.w - cellPadX, topY, { align: "right", lang: "ar" });
+              pdf.text(altsLines, cx + c.w - cellPadX, topY, { align: "right", ...rtlTextOpts });
             }
             cx += c.w;
           }
@@ -4280,7 +4402,7 @@
         sy = writeRtl(`قيمة الخصم: $${formatMoney(discountValue)} (${formatMoney(discountPct)}%)`, xRight - 6, sy, maxWidth - 12, 12).y;
         pdf.setTextColor(...C.danger);
         pdf.setFontSize(14);
-        pdf.text(`الإجمالي بعد الخصم: $${formatMoney(afterTotal)}`, xRight - 6, sy + 2, { align: "right", lang: "ar" });
+        pdf.text(shapeArabicForPdf(`الإجمالي بعد الخصم: $${formatMoney(afterTotal)}`), xRight - 6, sy + 2, { align: "right", ...rtlTextOpts });
         y += 34 + 8;
 
         const notesInnerW = maxWidth - 12;
@@ -4306,31 +4428,82 @@
         y += Math.max(28, notesH) + 8;
 
         if (enableAlt && altPreviewData.length > 0) {
-          y = ensureRoom(y, 10);
+          y = ensureRoom(y, 16);
           y = writeRtl("تفاصيل البدائل الاحتياطية:", xRight, y, maxWidth, 12, C.text).y + 2;
+
+          const altCols = [
+            { key: "g", title: "#", w: 10, dir: "ltr", align: "center" },
+            { key: "orig", title: "الأصلي", w: 78, dir: "rtl", align: "right" },
+            { key: "qty", title: "العدد", w: 14, dir: "ltr", align: "center" },
+            { key: "alts", title: "البدائل", w: maxWidth - (10 + 78 + 14), dir: "rtl", align: "right" },
+          ];
+
+          const drawAltHeader = (yy) => {
+            pdf.setFillColor(...C.headerBg);
+            pdf.setDrawColor(255, 255, 255);
+            pdf.rect(tableX, yy, maxWidth, headerH, "F");
+            let cx = tableX;
+            pdf.setTextColor(255, 255, 255);
+            pdf.setFontSize(fontHeader);
+            for (const c of altCols) {
+              pdf.rect(cx, yy, c.w, headerH);
+              const tx = c.dir === "rtl" ? cx + c.w - cellPadX : cx + cellPadX;
+              const align = c.dir === "rtl" ? "right" : c.align;
+              const title = c.dir === "rtl" ? shapeArabicForPdf(String(c.title)) : String(c.title);
+              pdf.text(title, tx, yy + 6.2, { align, ...(c.dir === "rtl" ? rtlTextOpts : { lang: "en" }) });
+              cx += c.w;
+            }
+            return yy + headerH;
+          };
+
+          y = ensureTableRoom(y, headerH + 2);
+          y = drawAltHeader(y);
+          const altFont = 9;
           for (let gi = 0; gi < altPreviewData.length; gi++) {
             const g = altPreviewData[gi];
-            const origLabel = g.originalProduct ? `${g.originalProduct.code1 || ""} ${g.originalProduct.code2 || ""}`.trim() : g.originalCode;
             const qty = g.qty || 0;
-            y = ensureRoom(y, 16);
-            y = writeRtl(`مجموعة ${gi + 1} — الأصلي: ${origLabel || "—"} — العدد: ${qty || 0}`, xRight, y, maxWidth, 11, C.primaryDark).y;
-            if (g.originalProduct) {
-              y = writeRtl(`ABOUT: ${String(g.originalProduct.about || "—")}`, xRight, y, maxWidth, 10, C.text).y;
-              y = writeLtr(`$${formatMoney(Number(g.originalProduct.priceAfter) || 0)}`, xLeft, y - 0.5, maxWidth, 10, C.text, "left").y;
-            }
-            for (let ai = 0; ai < g.alts.length; ai++) {
-              const a = g.alts[ai];
-              const p = a.product;
-              const label = p ? `${p.code1 || ""} ${p.code2 || ""}`.trim() : String(a.code || "");
-              y = ensureRoom(y, 12);
-              y = writeRtl(`بديل ${ai + 1}: ${label || "—"} — العدد: ${qty || 0}`, xRight, y, maxWidth, 10.5, p ? C.text : C.danger).y;
-              if (p) {
-                y = writeRtl(`ABOUT: ${String(p.about || "—")}`, xRight, y, maxWidth, 9.8, C.muted).y;
-                y = writeLtr(`$${formatMoney(Number(p.priceAfter) || 0)}`, xLeft, y - 0.5, maxWidth, 9.8, C.text, "left").y;
+            const origCode = g.originalProduct ? String(g.originalProduct.code1 || g.originalCode || "").trim() : String(g.originalCode || "").trim();
+            const origAbout = g.originalProduct ? String(g.originalProduct.about || "").trim() : "";
+            const origText = `${origCode || "—"}${origAbout ? `\n${origAbout}` : ""}`;
+            const altCodes = g.alts
+              .map((a, idx) => {
+                const p = a?.product;
+                const code = p ? String(p.code1 || a.code || "").trim() : String(a?.code || "").trim();
+                const about = p ? String(p.about || "").trim() : "";
+                const line = code ? `بديل ${idx + 1}: ${code}` : `بديل ${idx + 1}: —`;
+                return about ? `${line}\n${about}` : line;
+              })
+              .filter(Boolean);
+            const altsText = altCodes.length ? altCodes.join("\n\n") : "لا توجد بدائل.";
+
+            pdf.setFontSize(altFont);
+            const origLines = pdf.splitTextToSize(shapeArabicForPdf(origText), altCols.find((c) => c.key === "orig").w - cellPadX * 2);
+            const altsLines = pdf.splitTextToSize(shapeArabicForPdf(altsText), altCols.find((c) => c.key === "alts").w - cellPadX * 2);
+            const linesCount = Math.max(origLines.length, altsLines.length, 1);
+            const rowH = Math.max(10, pdfLineHeight(pdf, altFont) * linesCount + 4);
+
+            y = ensureTableRoom(y, rowH + 2);
+            let cx = tableX;
+            pdf.setDrawColor(11, 43, 42);
+            pdf.setTextColor(...C.text);
+            for (const c of altCols) {
+              pdf.rect(cx, y, c.w, rowH);
+              const topY = y + 5.8;
+              if (c.key === "g") {
+                writeLtr(String(gi + 1), cx + c.w / 2, topY, c.w - 2, altFont, C.text, "center");
+              } else if (c.key === "orig") {
+                pdf.text(origLines, cx + c.w - cellPadX, topY, { align: "right", ...rtlTextOpts });
+              } else if (c.key === "qty") {
+                writeLtr(String(qty || 0), cx + c.w / 2, topY, c.w - 2, altFont, C.text, "center");
+              } else if (c.key === "alts") {
+                pdf.setTextColor(...C.muted);
+                pdf.text(altsLines, cx + c.w - cellPadX, topY, { align: "right", ...rtlTextOpts });
               }
+              cx += c.w;
             }
-            y += 2;
+            y += rowH + 2;
           }
+          y += 4;
         }
 
         pdf.setTextColor(...C.gray);
@@ -4344,6 +4517,7 @@
         if (state.cart.size === 0) {
           els.orderSummary.innerHTML = "";
           els.checkoutMeta.textContent = "السلة فارغة";
+          updateCartCodesDatalist();
           return;
         }
         const total = formatMoney(cartTotals());
@@ -4388,6 +4562,7 @@
         }
         html += `</div>`;
         els.orderSummary.innerHTML = html;
+        updateCartCodesDatalist();
       }
 
       function checkout() {
@@ -4795,6 +4970,22 @@
           el.addEventListener("change", saveDraftDebounced);
         }
 
+        els.checkoutForm.addEventListener("click", (e) => {
+          const t = e.target;
+          if (!(t instanceof HTMLElement)) return;
+          const btn = t.closest("[data-clear]");
+          if (!(btn instanceof HTMLElement)) return;
+          const id = String(btn.getAttribute("data-clear") ?? "").trim();
+          if (!id) return;
+          const el = document.getElementById(id);
+          if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+            el.value = "";
+            el.focus();
+            el.dispatchEvent(new Event("input", { bubbles: true }));
+            el.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+        });
+
         els.shipHomsRadio.addEventListener("change", () => {
           if (!els.shipHomsRadio.checked) return;
           els.shipHomsBlock.style.display = "grid";
@@ -5019,7 +5210,6 @@
           }
           await copyText(invoice);
           els.whatsappAfterOrder.style.display = "";
-          if (sentOk) setHash(`info=${encodeURIComponent("rating")}`);
         });
 
         els.copyInvoiceBtn.addEventListener("click", async () => {
