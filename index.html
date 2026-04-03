@@ -1729,6 +1729,9 @@
                     <button class="btn btn-ghost" id="qadmousBranchesBtn" type="button" style="flex:1">فروع القدموس</button>
                   </div>
                   <div class="mini-note">يرجى اختيار الفرع القريب منكم</div>
+                  <div class="mini-note" style="font-weight:900;color:#c62828">
+                    نعتذر حالياً عن التعامل مع شركة القدموس نهائياً بسبب الازدحام ومشاكل لديهم بالشبكة والتأخير حتى إشعار آخر , حالياً فقط مع مسارات , يرجى عدم الإحراج
+                  </div>
                 </div>
               </div>
               <label style="display:grid;gap:6px">
@@ -1752,39 +1755,36 @@
               <label class="checkrow">
                 <input id="allowFamilySwitchInput" type="checkbox" />
                 <span>
-                  لا أمانع من تبديل منتج بأقرب شي متوفر من نفس العائلة , مثال " مثقب كهرباء 500 وات بدال 550 وات , مفك طول 30 سم بدل مفك طول 20 سم , بمعنى نختار الأقرب والأنسب في حال لم نجده للسرعة تجهيز الطلب , يمكن ترجيع مجاناً في حال أي غلط أو شيء لم يناسبك"
+                  أنا اوافق على تبديل منتج بآخر قريب جداً بنفس العائلة في حال لم يكن متوفراً , علماً يمكن ترجيع مجاناً في حال البديل لم يناسبك أو نحن بدلناه بشيء غلط ,
+                  مثال: تبديل مفك 30 سم مفقود بـ 40 سم , تبديل مثقب كهرباء 500 وات بـ 550 وات ... الخ
                 </span>
               </label>
-              <div style="display:grid;gap:10px;padding:10px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.7)">
-                <label class="checkrow" style="margin:0">
-                  <input id="enableAltSectionInput" type="checkbox" />
-                  <span style="font-weight:900">تفعيل قسم البدائل (اختياري)</span>
-                </label>
-                <div id="altSection" style="display:none;gap:10px">
-                  <label style="display:grid;gap:6px">
-                    <span style="font-weight:800">في حال لم يوجد هذا يرجى طلب هذا (كود المادة الأصلية)</span>
-                    <input
-                      id="altOriginalCodeInput"
-                      type="text"
-                      placeholder="اكتب CODE1 أو CODE2"
-                      style="padding:12px;border:1px solid var(--border);border-radius:12px;direction:ltr;unicode-bidi:plaintext"
-                    />
-                  </label>
-                  <div id="altOriginalPreview" style="display:grid;gap:8px"></div>
-                  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-                    <div style="font-weight:900">بدائل ممكنة (حتى 10)</div>
-                    <button class="btn btn-ghost" id="addAltBtn" type="button" style="width:44px;min-width:44px;padding:10px 0;font-weight:900">+</button>
-                    <div class="mini-note">اكتب كود البديل وسيظهر المنتج وسعره</div>
-                  </div>
-                  <div id="altCodesList" style="display:grid;gap:10px"></div>
+              <label class="checkrow">
+                <input id="fastShipEvenIfMissingInput" type="checkbox" />
+                <span>أرسل الطلب بأسرع ما يمكن ولو كان يوجد بعض النقص (فترة متوقعة 3-6 يوم بكثير)</span>
+              </label>
+              <label class="checkrow">
+                <input id="enableAltSectionInput" type="checkbox" />
+                <span>تفعيل ميزة اختيار البدائل الاحتياطية في حال عدم توفر المنتج الأصلي <span class="mini-note">ميزة اختيارية وليست ضرورية</span></span>
+              </label>
+              <div class="mini-note" id="altFeatureNote" style="margin-top:-4px">
+                لا يمكننا إخبار العملاء يدوياً بكل نقص ذلك يشكل صعوبة لنا , سيتم إرسال الفاتورة ولو مع نقص ويمكنكم تكميل النقص من المتاجر الآخرى , نرسل الطلب للمستودع وهو يجهز الطلب بالكامل لإرساله لكم مباشرة
+              </div>
+              <div id="altSection" style="display:none;gap:10px;border:1px solid var(--border);border-radius:12px;padding:10px;background:rgba(255,255,255,0.7)">
+                <div style="display:flex;gap:10px;flex-wrap:wrap">
+                  <button class="btn btn-ghost" id="altAddGroupBtn" type="button" style="flex:1">+ إضافة كود أصلي</button>
+                  <button class="btn btn-ghost" id="altRemoveGroupBtn" type="button" style="flex:1">- حذف</button>
+                  <button class="btn btn-primary" id="altPreviewBtn" type="button" style="flex:1">إظهار البدائل</button>
                 </div>
+                <div id="altGroupsList" style="display:grid;gap:10px"></div>
+                <div id="altPreview" style="display:grid;gap:10px"></div>
               </div>
               <div style="display:flex;gap:10px;flex-wrap:wrap">
                 <button class="btn btn-primary" id="confirmOrderBtn" type="submit" style="flex:1">إتمام الطلب</button>
                 <button class="btn btn-ghost" id="copyInvoiceBtn" type="button" style="flex:1;display:none">نسخ الفاتورة</button>
               </div>
-              <div class="mini-note" id="partialInvoiceNote">
-                قد نرسل لكم الفاتورة ناقصة "أحياناً" لقطعة أو أكثر مثلاً بسبب فقدها بالمخزون أو تأخر بالمزامنة بين المستودع والموقع الإلكتروني أو بسبب زحمة وضغط وللسرعة نرسلها بدونها
+              <div class="mini-note" style="font-weight:900">
+                قد يحدث بطئ مزامنة بين المستودع والموقع الإلكتروني , قد لا يتم إرسال كامل الطلب ووجود بعض النقص للمواد أو لا ترسل بسبب التأخير , لذلك سيتم إرسال الفاتورة ولو هناك نقص مع خصم قيمة المفقود
               </div>
               <div class="mini-note">سيتم تواصل معك خلال واتساب بعد إتمام الطلب قبل أن نرسل الطرد</div>
               <a
@@ -1870,86 +1870,15 @@
       <div class="toast-bubble" id="toastBubble"></div>
     </div>
 
-    <script>
-      (function () {
-        const hint = document.getElementById("hint");
-        const status = document.getElementById("status");
-        const show = (msg) => {
-          if (hint) hint.textContent = "فشل التحميل";
-          if (status) {
-            status.style.display = "";
-            status.textContent = String(msg ?? "حدث خطأ غير معروف");
-            status.setAttribute("data-error", "1");
-          }
-        };
-
-        window.__HGY_BOOTED__ = false;
-        window.addEventListener("error", (e) => {
-          try {
-            show(`خطأ بالصفحة: ${String(e?.message ?? "").trim() || "غير معروف"}`);
-          } catch {}
-        });
-        window.addEventListener("unhandledrejection", (e) => {
-          try {
-            const r = e?.reason;
-            const msg = r && typeof r === "object" && "message" in r ? String(r.message ?? "") : String(r ?? "");
-            show(`فشل التحميل: ${msg || "Promise rejection"}`);
-          } catch {}
-        });
-
-        window.setTimeout(() => {
-          if (window.__HGY_BOOTED__) return;
-          show(
-            "السكربت الرئيسي لم يبدأ. غالباً هناك خطأ Syntax في ملف HTML على GitHub أو تم رفع ملف ناقص/قديم. افتح DevTools → Console لرؤية الخطأ."
-          );
-        }, 2500);
-      })();
-    </script>
-
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
     <script>
-      window.__HGY_BOOTED__ = true;
-      const reportBootError = (msg) => {
-        const hint = document.getElementById("hint");
-        const status = document.getElementById("status");
-        if (hint) hint.textContent = "فشل التحميل";
-        if (status) {
-          status.style.display = "";
-          status.textContent = String(msg ?? "حدث خطأ غير معروف");
-          status.setAttribute("data-error", "1");
-        }
-      };
-
-      window.addEventListener("error", (e) => {
-        try {
-          reportBootError(`خطأ بالصفحة: ${String(e?.message ?? "").trim() || "غير معروف"}`);
-        } catch {}
-      });
-      window.addEventListener("unhandledrejection", (e) => {
-        try {
-          const r = e?.reason;
-          const msg = r && typeof r === "object" && "message" in r ? String(r.message ?? "") : String(r ?? "");
-          reportBootError(`فشل التحميل: ${msg || "Promise rejection"}`);
-        } catch {}
-      });
-
       const CONFIG = {
-        CSV_URLS: ["products.csv", "../products.csv"],
-        HOME_PRODUCTS_URLS: ["home.csv", "../home.csv", "home", "../home"],
-        ABOUT_URLS: ["about.csv", "../about.csv", "about", "../about"],
+        CSV_URL: "products.csv",
+        HOME_PRODUCTS_URLS: ["home.csv", "home"],
+        ABOUT_URLS: ["about.csv", "about"],
         OUT_OF_STOCK_URLS_BY_CATEGORY: {
-          TOTAL: [
-            "TOTAL_out_of_stock.csv",
-            "../TOTAL_out_of_stock.csv",
-            "TOTAL_out_of_stock",
-            "../TOTAL_out_of_stock",
-          ],
-          WADFOW: [
-            "WADFOW_out_of_stock.csv",
-            "../WADFOW_out_of_stock.csv",
-            "WADFOW_out_of_stock",
-            "../WADFOW_out_of_stock",
-          ],
+          TOTAL: ["TOTAL_out_of_stock.csv", "TOTAL_out_of_stock"],
+          WADFOW: ["WADFOW_out_of_stock.csv", "WADFOW_out_of_stock"],
         },
         ITEMS_PER_PAGE: 20,
         MARKUP_RATE: 0.15,
@@ -2111,13 +2040,15 @@
         shipSypInput: document.getElementById("shipSypInput"),
         allowVodafoneSwitchInput: document.getElementById("allowVodafoneSwitchInput"),
         allowFamilySwitchInput: document.getElementById("allowFamilySwitchInput"),
+        fastShipEvenIfMissingInput: document.getElementById("fastShipEvenIfMissingInput"),
         enableAltSectionInput: document.getElementById("enableAltSectionInput"),
+        altFeatureNote: document.getElementById("altFeatureNote"),
         altSection: document.getElementById("altSection"),
-        altOriginalCodeInput: document.getElementById("altOriginalCodeInput"),
-        altOriginalPreview: document.getElementById("altOriginalPreview"),
-        addAltBtn: document.getElementById("addAltBtn"),
-        altCodesList: document.getElementById("altCodesList"),
-        partialInvoiceNote: document.getElementById("partialInvoiceNote"),
+        altAddGroupBtn: document.getElementById("altAddGroupBtn"),
+        altRemoveGroupBtn: document.getElementById("altRemoveGroupBtn"),
+        altPreviewBtn: document.getElementById("altPreviewBtn"),
+        altGroupsList: document.getElementById("altGroupsList"),
+        altPreview: document.getElementById("altPreview"),
         confirmOrderBtn: document.getElementById("confirmOrderBtn"),
         copyInvoiceBtn: document.getElementById("copyInvoiceBtn"),
         invoiceNote: document.getElementById("invoiceNote"),
@@ -2166,7 +2097,7 @@
         currentInfoKey: "",
         lastMainRoute: "shop",
         lastProductKey: "",
-        customerDraft: null,
+        altGroupsDraft: [],
       };
 
       function setInfoStatus(text, isError = false) {
@@ -2203,17 +2134,14 @@
         } catch {}
       }
 
-      async function fetchTextCached(url, maxAgeMs = 6 * 60 * 60 * 1000, timeoutMs = 20000) {
+      async function fetchTextCached(url, maxAgeMs = 6 * 60 * 60 * 1000) {
         const u = String(url ?? "").trim();
         if (!u) return null;
         const cacheKey = `hjy_text_cache_v1::${u}`;
         const cached = getCachedText(cacheKey, maxAgeMs);
         if (cached) return { url: u, text: cached, cached: true };
         try {
-          const controller = typeof AbortController === "function" ? new AbortController() : null;
-          const timer = controller ? window.setTimeout(() => controller.abort(), Math.max(1000, Number(timeoutMs) || 20000)) : null;
-          const res = await fetch(u, { cache: "force-cache", signal: controller ? controller.signal : undefined });
-          if (timer) window.clearTimeout(timer);
+          const res = await fetch(u, { cache: "force-cache" });
           if (!res.ok) throw new Error("Fetch failed");
           const text = await res.text();
           if (!String(text ?? "").trim()) throw new Error("Empty");
@@ -2549,192 +2477,12 @@
         return margin;
       }
 
-      const ARABIC_FORMS = {
-        "ء": ["\uFE80", "", "", ""],
-        "آ": ["\uFE81", "\uFE82", "", ""],
-        "أ": ["\uFE83", "\uFE84", "", ""],
-        "ؤ": ["\uFE85", "\uFE86", "", ""],
-        "إ": ["\uFE87", "\uFE88", "", ""],
-        "ئ": ["\uFE89", "\uFE8A", "\uFE8B", "\uFE8C"],
-        "ا": ["\uFE8D", "\uFE8E", "", ""],
-        "ب": ["\uFE8F", "\uFE90", "\uFE91", "\uFE92"],
-        "ة": ["\uFE93", "\uFE94", "", ""],
-        "ت": ["\uFE95", "\uFE96", "\uFE97", "\uFE98"],
-        "ث": ["\uFE99", "\uFE9A", "\uFE9B", "\uFE9C"],
-        "ج": ["\uFE9D", "\uFE9E", "\uFE9F", "\uFEA0"],
-        "ح": ["\uFEA1", "\uFEA2", "\uFEA3", "\uFEA4"],
-        "خ": ["\uFEA5", "\uFEA6", "\uFEA7", "\uFEA8"],
-        "د": ["\uFEA9", "\uFEAA", "", ""],
-        "ذ": ["\uFEAB", "\uFEAC", "", ""],
-        "ر": ["\uFEAD", "\uFEAE", "", ""],
-        "ز": ["\uFEAF", "\uFEB0", "", ""],
-        "س": ["\uFEB1", "\uFEB2", "\uFEB3", "\uFEB4"],
-        "ش": ["\uFEB5", "\uFEB6", "\uFEB7", "\uFEB8"],
-        "ص": ["\uFEB9", "\uFEBA", "\uFEBB", "\uFEBC"],
-        "ض": ["\uFEBD", "\uFEBE", "\uFEBF", "\uFEC0"],
-        "ط": ["\uFEC1", "\uFEC2", "\uFEC3", "\uFEC4"],
-        "ظ": ["\uFEC5", "\uFEC6", "\uFEC7", "\uFEC8"],
-        "ع": ["\uFEC9", "\uFECA", "\uFECB", "\uFECC"],
-        "غ": ["\uFECD", "\uFECE", "\uFECF", "\uFED0"],
-        "ف": ["\uFED1", "\uFED2", "\uFED3", "\uFED4"],
-        "ق": ["\uFED5", "\uFED6", "\uFED7", "\uFED8"],
-        "ك": ["\uFED9", "\uFEDA", "\uFEDB", "\uFEDC"],
-        "ل": ["\uFEDD", "\uFEDE", "\uFEDF", "\uFEE0"],
-        "م": ["\uFEE1", "\uFEE2", "\uFEE3", "\uFEE4"],
-        "ن": ["\uFEE5", "\uFEE6", "\uFEE7", "\uFEE8"],
-        "ه": ["\uFEE9", "\uFEEA", "\uFEEB", "\uFEEC"],
-        "و": ["\uFEED", "\uFEEE", "", ""],
-        "ى": ["\uFEEF", "\uFEF0", "", ""],
-        "ي": ["\uFEF1", "\uFEF2", "\uFEF3", "\uFEF4"],
-        "پ": ["\uFB56", "\uFB57", "\uFB58", "\uFB59"],
-        "چ": ["\uFB7A", "\uFB7B", "\uFB7C", "\uFB7D"],
-        "ژ": ["\uFB8A", "\uFB8B", "", ""],
-        "گ": ["\uFB92", "\uFB93", "\uFB94", "\uFB95"],
-        "ک": ["\uFB8E", "\uFB8F", "\uFB90", "\uFB91"],
-        "ی": ["\uFBFC", "\uFBFD", "\uFBFE", "\uFBFF"],
-      };
-
-      const LAM_ALEF_LIGS = {
-        "ا": ["\uFEFB", "\uFEFC"],
-        "أ": ["\uFEF7", "\uFEF8"],
-        "إ": ["\uFEF9", "\uFEFA"],
-        "آ": ["\uFEF5", "\uFEF6"],
-      };
-
-      function isArabicMark(ch) {
-        const c = ch.charCodeAt(0);
-        return (
-          (c >= 0x064b && c <= 0x065f) ||
-          c === 0x0670 ||
-          (c >= 0x06d6 && c <= 0x06ed)
-        );
-      }
-
-      function isArabicVisualChar(ch) {
-        const c = ch.charCodeAt(0);
-        return (
-          (c >= 0x0600 && c <= 0x06ff) ||
-          (c >= 0x0750 && c <= 0x077f) ||
-          (c >= 0xfb50 && c <= 0xfdff) ||
-          (c >= 0xfe70 && c <= 0xfeff)
-        );
-      }
-
-      function arabicShape(text) {
-        const s = String(text ?? "");
-        if (!s) return s;
-        const chars = Array.from(s);
-        const prevNonMarkIndex = (i) => {
-          for (let j = i - 1; j >= 0; j--) if (!isArabicMark(chars[j])) return j;
-          return -1;
-        };
-        const nextNonMarkIndex = (i) => {
-          for (let j = i + 1; j < chars.length; j++) if (!isArabicMark(chars[j])) return j;
-          return -1;
-        };
-
-        const canConnectToPrev = (ch) => {
-          const f = ARABIC_FORMS[ch];
-          return Boolean(f && f[1]);
-        };
-        const canConnectToNext = (ch) => {
-          const f = ARABIC_FORMS[ch];
-          return Boolean(f && f[2] && f[3]);
-        };
-
-        let out = "";
-        for (let i = 0; i < chars.length; i++) {
-          const ch = chars[i];
-          if (isArabicMark(ch)) {
-            out += ch;
-            continue;
-          }
-
-          if (ch === "ل") {
-            const ni = nextNonMarkIndex(i);
-            const next = ni >= 0 ? chars[ni] : "";
-            const lig = LAM_ALEF_LIGS[next];
-            if (lig) {
-              const pi = prevNonMarkIndex(i);
-              const prev = pi >= 0 ? chars[pi] : "";
-              const connectedPrev = canConnectToNext(prev) && canConnectToPrev(ch);
-              out += connectedPrev ? lig[1] : lig[0];
-              if (ni === i + 1) i += 1;
-              else if (ni > i) chars[ni] = "";
-              continue;
-            }
-          }
-
-          const f = ARABIC_FORMS[ch];
-          if (!f) {
-            out += ch;
-            continue;
-          }
-
-          const pi = prevNonMarkIndex(i);
-          const ni = nextNonMarkIndex(i);
-          const prev = pi >= 0 ? chars[pi] : "";
-          const next = ni >= 0 ? chars[ni] : "";
-          const connectedPrev = prev && canConnectToNext(prev) && canConnectToPrev(ch);
-          const connectedNext = next && canConnectToPrev(next) && canConnectToNext(ch);
-
-          if (connectedPrev && connectedNext && f[3]) out += f[3];
-          else if (connectedPrev && f[1]) out += f[1];
-          else if (connectedNext && f[2]) out += f[2];
-          else out += f[0] || ch;
-        }
-        return out;
-      }
-
-      function rtlVisualize(text) {
-        const shaped = arabicShape(text);
-        const swap = (ch) => {
-          if (ch === "(") return ")";
-          if (ch === ")") return "(";
-          if (ch === "[") return "]";
-          if (ch === "]") return "[";
-          if (ch === "{") return "}";
-          if (ch === "}") return "{";
-          if (ch === "<") return ">";
-          if (ch === ">") return "<";
-          return ch;
-        };
-
-        const runs = [];
-        let cur = "";
-        let curIsAr = null;
-        for (const ch of Array.from(shaped)) {
-          const isAr = isArabicVisualChar(ch);
-          if (curIsAr === null) {
-            curIsAr = isAr;
-            cur = ch;
-            continue;
-          }
-          if (isAr === curIsAr) cur += ch;
-          else {
-            runs.push({ isAr: curIsAr, text: cur });
-            curIsAr = isAr;
-            cur = ch;
-          }
-        }
-        if (cur) runs.push({ isAr: curIsAr, text: cur });
-
-        runs.reverse();
-        let out = "";
-        for (const r of runs) {
-          if (r.isAr) out += Array.from(r.text).reverse().map(swap).join("");
-          else out += r.text;
-        }
-        return out;
-      }
-
       function pdfWriteRtl(doc, text, xRight, y, maxWidth, fontSize) {
         const t = String(text ?? "").trim();
         if (!t) return y;
         doc.setFontSize(fontSize);
         const lines = doc.splitTextToSize(t, maxWidth);
-        const visual = Array.isArray(lines) ? lines.map((ln) => rtlVisualize(String(ln ?? ""))) : [rtlVisualize(String(lines ?? ""))];
-        doc.text(visual, xRight, y, { align: "right" });
+        doc.text(lines, xRight, y, { align: "right" });
         return y + pdfLineHeight(doc, fontSize) * lines.length;
       }
 
@@ -2749,51 +2497,6 @@
 
       function productKey(p) {
         return `${p.code1}::${p.code2}`;
-      }
-
-      function findProductByAnyCode(code) {
-        const raw = String(code ?? "").trim();
-        if (!raw) return null;
-        const key = safeLower(raw);
-        const list = Array.isArray(state.allProducts) ? state.allProducts : [];
-        for (const p of list) {
-          if (!p) continue;
-          if (safeLower(p.code1) === key) return p;
-          if (safeLower(p.code2) === key) return p;
-        }
-        return null;
-      }
-
-      function renderAltProductPreviewHtml(code) {
-        const raw = String(code ?? "").trim();
-        if (!raw) return "";
-        const p = findProductByAnyCode(raw);
-        if (!p) {
-          return `<div class="mini-note" style="color:var(--muted);font-weight:800">لم يتم العثور على المنتج لهذا الكود: <bdi style="direction:ltr;unicode-bidi:plaintext">${escapeHtml(
-            raw
-          )}</bdi></div>`;
-        }
-        return `
-          <div style="display:flex;gap:10px;align-items:center;border:1px solid var(--border);border-radius:12px;padding:10px;background:#fff">
-            <img
-              src="${escapeHtmlAttr(p.photo || PLACEHOLDER_IMG)}"
-              alt="${escapeHtmlAttr(p.code1)}"
-              style="width:56px;height:56px;object-fit:cover;border-radius:10px;border:1px solid var(--border)"
-              loading="lazy"
-              decoding="async"
-              referrerpolicy="no-referrer"
-              onerror="this.onerror=null;this.src='${PLACEHOLDER_IMG}'"
-            />
-            <div style="min-width:0;flex:1;display:grid;gap:4px">
-              <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">
-                <bdi style="direction:ltr;unicode-bidi:plaintext;font-weight:900">${escapeHtml(p.code1)}</bdi>
-                <bdi style="direction:ltr;unicode-bidi:plaintext;color:var(--muted);font-weight:800">${escapeHtml(p.code2)}</bdi>
-                <bdi style="direction:ltr;unicode-bidi:plaintext;color:var(--primary-3);font-weight:900">$${formatMoney(p.priceAfter)}</bdi>
-              </div>
-              <div style="color:var(--muted);font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(p.about)}</div>
-            </div>
-          </div>
-        `;
       }
 
       function setStatus(text, isError = false) {
@@ -2886,10 +2589,9 @@
         const shipCurrency = String(d.shipCurrency ?? "").trim();
         const allowSwitch = Boolean(d.allowSwitch);
         const allowFamilySwitch = Boolean(d.allowFamilySwitch);
+        const fastShipEvenIfMissing = Boolean(d.fastShipEvenIfMissing);
         const enableAlt = Boolean(d.enableAlt);
-        const altOriginalCode = String(d.altOriginalCode ?? "").trim();
-        const altCodes = Array.isArray(d.altCodes) ? d.altCodes.map((x) => String(x ?? "").trim()).filter(Boolean).slice(0, 10) : [];
-        state.customerDraft = { allowFamilySwitch, enableAlt, altOriginalCode, altCodes };
+        const altGroups = Array.isArray(d.altGroups) ? d.altGroups : [];
 
         if (els.fullNameInput && !String(els.fullNameInput.value ?? "").trim() && name) els.fullNameInput.value = name;
         if (els.govInput && !String(els.govInput.value ?? "").trim() && gov) els.govInput.value = gov;
@@ -2899,8 +2601,8 @@
         if (els.orderNotesInput && !String(els.orderNotesInput.value ?? "").trim() && notes) els.orderNotesInput.value = notes;
         if (els.allowVodafoneSwitchInput) els.allowVodafoneSwitchInput.checked = allowSwitch;
         if (els.allowFamilySwitchInput) els.allowFamilySwitchInput.checked = allowFamilySwitch;
+        if (els.fastShipEvenIfMissingInput) els.fastShipEvenIfMissingInput.checked = fastShipEvenIfMissing;
         if (els.enableAltSectionInput) els.enableAltSectionInput.checked = enableAlt;
-        if (els.altOriginalCodeInput && !String(els.altOriginalCodeInput.value ?? "").trim() && altOriginalCode) els.altOriginalCodeInput.value = altOriginalCode;
 
         if (shipType === "HOMS") {
           if (els.shipHomsRadio) els.shipHomsRadio.checked = true;
@@ -2921,6 +2623,7 @@
             els.shipSypInput.checked = false;
           }
         }
+        setAltSectionEnabled(enableAlt, altGroups);
       }
 
       function saveCustomerDraft() {
@@ -2934,32 +2637,178 @@
         const shipCurrency = els.shipSypInput?.checked ? "سوري" : "دولار";
         const allowSwitch = Boolean(els.allowVodafoneSwitchInput?.checked);
         const allowFamilySwitch = Boolean(els.allowFamilySwitchInput?.checked);
+        const fastShipEvenIfMissing = Boolean(els.fastShipEvenIfMissingInput?.checked);
         const enableAlt = Boolean(els.enableAltSectionInput?.checked);
-        const altOriginalCode = String(els.altOriginalCodeInput?.value ?? "").trim();
-        const altCodes = els.altCodesList
-          ? Array.from(els.altCodesList.querySelectorAll("input[data-alt-code]"))
-              .map((x) => String(x.value ?? "").trim())
-              .filter(Boolean)
-              .slice(0, 10)
-          : [];
+        const altGroups = enableAlt ? readAltGroupsFromDom() : [];
         localStorage.setItem(
           "hjy_customer_v1",
-          JSON.stringify({
-            name,
-            gov,
-            phone,
-            shipType,
-            homsAddress,
-            shipCenter,
-            notes,
-            shipCurrency,
-            allowSwitch,
-            allowFamilySwitch,
-            enableAlt,
-            altOriginalCode,
-            altCodes,
-          })
+          JSON.stringify({ name, gov, phone, shipType, homsAddress, shipCenter, notes, shipCurrency, allowSwitch })
         );
+      }
+
+      function normalizeCodeKey(code) {
+        return safeLower(String(code ?? "").trim());
+      }
+
+      function findProductByAnyCode(code) {
+        const k = normalizeCodeKey(code);
+        if (!k) return null;
+        return state.allProducts.find((p) => normalizeCodeKey(p.code1) === k || normalizeCodeKey(p.code2) === k) || null;
+      }
+
+      function findCartItemByAnyCode(code) {
+        const k = normalizeCodeKey(code);
+        if (!k) return null;
+        for (const it of state.cart.values()) {
+          if (normalizeCodeKey(it.product.code1) === k || normalizeCodeKey(it.product.code2) === k) return it;
+        }
+        return null;
+      }
+
+      function clamp(n, min, max) {
+        return Math.max(min, Math.min(max, n));
+      }
+
+      function normalizeAltGroups(groups) {
+        const list = Array.isArray(groups) ? groups : [];
+        const out = [];
+        for (const g of list) {
+          if (!g || typeof g !== "object") continue;
+          const original = String(g.original ?? "").trim();
+          const altsRaw = Array.isArray(g.alts) ? g.alts : [];
+          const alts = altsRaw.map((x) => String(x ?? "").trim()).filter(Boolean).slice(0, 5);
+          out.push({ original, alts: alts.length > 0 ? alts : ["", ""] });
+        }
+        if (out.length === 0) out.push({ original: "", alts: ["", ""] });
+        return out.slice(0, 25);
+      }
+
+      function setAltSectionEnabled(enabled, groups = null) {
+        const on = Boolean(enabled);
+        if (els.altSection) els.altSection.style.display = on ? "grid" : "none";
+        if (!on) {
+          if (els.altPreview) els.altPreview.innerHTML = "";
+          return;
+        }
+        const normalized = normalizeAltGroups(groups ?? state.altGroupsDraft);
+        state.altGroupsDraft = normalized;
+        renderAltGroups(normalized);
+      }
+
+      function renderAltGroups(groups) {
+        if (!(els.altGroupsList instanceof HTMLElement)) return;
+        const normalized = normalizeAltGroups(groups);
+        state.altGroupsDraft = normalized;
+        let html = "";
+        for (let gi = 0; gi < normalized.length; gi++) {
+          const g = normalized[gi];
+          const alts = Array.isArray(g.alts) ? g.alts : [];
+          html += `<div data-alt-group="${gi}" style="border:1px solid var(--border);border-radius:12px;padding:10px;background:rgba(255,255,255,0.7);display:grid;gap:10px">
+              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between">
+                <div style="font-weight:900">مجموعة ${gi + 1}</div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap">
+                  <button class="btn btn-ghost" type="button" data-alt-add="1">+ بديل</button>
+                  <button class="btn btn-ghost" type="button" data-alt-remove="1">- بديل</button>
+                </div>
+              </div>
+              <label style="display:grid;gap:6px">
+                <span style="font-weight:800">الكود الاصلي بالفاتورة</span>
+                <input data-alt-original="1" type="text" value="${escapeHtmlAttr(g.original)}" style="padding:12px;border:1px solid var(--border);border-radius:12px;direction:ltr;unicode-bidi:plaintext" />
+              </label>
+              <div style="display:grid;gap:10px" data-alt-list="1">`;
+          for (let ai = 0; ai < alts.length; ai++) {
+            html += `<label style="display:grid;gap:6px">
+                  <span style="font-weight:800">الكود الاحتياطي ${ai + 1}</span>
+                  <input data-alt-code="1" type="text" value="${escapeHtmlAttr(alts[ai] || "")}" style="padding:12px;border:1px solid var(--border);border-radius:12px;direction:ltr;unicode-bidi:plaintext" />
+                </label>`;
+          }
+          html += `</div></div>`;
+        }
+        els.altGroupsList.innerHTML = html;
+      }
+
+      function readAltGroupsFromDom() {
+        if (!(els.altGroupsList instanceof HTMLElement)) return [];
+        const groups = [];
+        const nodes = Array.from(els.altGroupsList.querySelectorAll("[data-alt-group]"));
+        for (const node of nodes) {
+          if (!(node instanceof HTMLElement)) continue;
+          const originalInput = node.querySelector("input[data-alt-original]");
+          const original = originalInput instanceof HTMLInputElement ? String(originalInput.value ?? "").trim() : "";
+          const altInputs = Array.from(node.querySelectorAll("input[data-alt-code]"));
+          const alts = altInputs
+            .map((x) => (x instanceof HTMLInputElement ? String(x.value ?? "").trim() : ""))
+            .filter(Boolean)
+            .slice(0, 5);
+          groups.push({ original, alts });
+        }
+        return normalizeAltGroups(groups);
+      }
+
+      function buildAltPreviewData(groups) {
+        const normalized = normalizeAltGroups(groups);
+        const out = [];
+        for (const g of normalized) {
+          const originalCode = String(g.original ?? "").trim();
+          const cartItem = originalCode ? findCartItemByAnyCode(originalCode) : null;
+          const originalProduct = cartItem?.product || (originalCode ? findProductByAnyCode(originalCode) : null);
+          const qty = cartItem ? Math.max(1, Number(cartItem.qty) || 1) : 0;
+          const altRows = [];
+          for (const code of Array.isArray(g.alts) ? g.alts : []) {
+            const c = String(code ?? "").trim();
+            if (!c) continue;
+            const p = findProductByAnyCode(c);
+            altRows.push({ code: c, product: p });
+          }
+          out.push({ originalCode, originalProduct, qty, alts: altRows });
+        }
+        return out;
+      }
+
+      function renderAltPreview(groups) {
+        if (!(els.altPreview instanceof HTMLElement)) return;
+        const rows = buildAltPreviewData(groups);
+        let html = "";
+        for (let i = 0; i < rows.length; i++) {
+          const r = rows[i];
+          const origAbout = r.originalProduct ? String(r.originalProduct.about ?? "").trim() : "";
+          const origPrice = r.originalProduct ? Number(r.originalProduct.priceAfter) || 0 : 0;
+          const origLine = r.originalProduct
+            ? `<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
+                <div style="min-width:0">
+                  <div style="font-weight:900">الأصلي: ${escapeHtml(String(r.originalCode || r.originalProduct.code1 || ""))}</div>
+                  <div class="panel-sub" style="margin-top:4px">${escapeHtml(origAbout || "—")}</div>
+                </div>
+                <div style="direction:ltr;unicode-bidi:plaintext;font-weight:900;color:var(--primary-3)">$${formatMoney(origPrice)} × ${escapeHtml(
+                  String(r.qty || 0)
+                )}</div>
+              </div>`
+            : `<div class="panel-sub" style="font-weight:900;color:#c62828">الأصلي غير موجود (تحقق من الكود)</div>`;
+
+          let altHtml = "";
+          for (const a of r.alts) {
+            const p = a.product;
+            if (!p) {
+              altHtml += `<div class="panel-sub" style="font-weight:900;color:#c62828">بديل (${escapeHtml(a.code)}): غير موجود</div>`;
+              continue;
+            }
+            altHtml += `<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;border:1px dashed var(--border);border-radius:12px;padding:10px;background:rgba(255,255,255,0.6)">
+                <div style="min-width:0">
+                  <div style="font-weight:900">بديل: ${escapeHtml(p.code1)} ${escapeHtml(p.code2 || "")}</div>
+                  <div class="panel-sub" style="margin-top:4px">${escapeHtml(String(p.about || ""))}</div>
+                </div>
+                <div style="direction:ltr;unicode-bidi:plaintext;font-weight:900;color:var(--primary-3)">$${formatMoney(Number(p.priceAfter) || 0)}</div>
+              </div>`;
+          }
+
+          html += `<div class="card" style="min-height:unset">
+              <div class="card-body" style="display:grid;gap:10px">
+                ${origLine}
+                ${altHtml ? `<div style="display:grid;gap:10px">${altHtml}</div>` : `<div class="panel-sub">لا توجد بدائل.</div>`}
+              </div>
+            </div>`;
+        }
+        els.altPreview.innerHTML = html || `<div class="panel-sub">لا توجد بيانات.</div>`;
       }
 
       function addOrderToHistory(details) {
@@ -2974,10 +2823,6 @@
           shipCurrency: String(details.shipCurrency ?? "").trim(),
           notes: String(details.notes ?? "").trim(),
           allowSwitch: Boolean(details.allowSwitch),
-          allowFamilySwitch: Boolean(details.allowFamilySwitch),
-          enableAlt: Boolean(details.enableAlt),
-          altOriginalCode: String(details.altOriginalCode ?? "").trim(),
-          altCodes: Array.isArray(details.altCodes) ? details.altCodes.map((x) => String(x ?? "").trim()).filter(Boolean).slice(0, 10) : [],
           totalBefore: cartTotalsBefore(),
           total: cartTotals(),
           items: Array.from(state.cart.values()).map((it) => ({
@@ -3892,14 +3737,6 @@
         const shipCurrency = String(details.shipCurrency ?? "").trim();
         const notes = String(details.notes ?? "").trim();
         const allowSwitch = Boolean(details.allowSwitch);
-        const allowFamilySwitch = Boolean(details.allowFamilySwitch);
-        const enableAlt = Boolean(details.enableAlt);
-        const altOriginalCode = String(details.altOriginalCode ?? "").trim();
-        const altCodes = Array.isArray(details.altCodes) ? details.altCodes.map((x) => String(x ?? "").trim()).filter(Boolean).slice(0, 10) : [];
-        const allowFamilySwitch = Boolean(details.allowFamilySwitch);
-        const enableAlt = Boolean(details.enableAlt);
-        const altOriginalCode = String(details.altOriginalCode ?? "").trim();
-        const altCodes = Array.isArray(details.altCodes) ? details.altCodes.map((x) => String(x ?? "").trim()).filter(Boolean).slice(0, 10) : [];
         const createdAt = Number(details.createdAt) || Date.now();
         const lines = [];
         lines.push("طلب جديد");
@@ -3908,8 +3745,6 @@
         lines.push(`المحافظة: ${gov}`);
         lines.push(`رقم الهاتف: ${phone}`);
         if (shipCurrency) lines.push(`شحن العملة: ${shipCurrency}`);
-        if (shipCurrency === "سوري")
-          lines.push("ملاحظة: سيتم تطبيق زيادة + 1.5 ل.س جديدة لسعر صرف لحظة الإرسال بسبب تذبذب الصرف");
         if (shipType === "HOMS") {
           lines.push("طريقة الاستلام: استلام ضمن حمص");
           if (homsAddress) lines.push(`عنوان ضمن حمص: ${homsAddress}`);
@@ -3920,53 +3755,22 @@
         if (notes) lines.push(`ملاحظات الطلب: ${notes}`);
         lines.push(`بديل توتال إلى وادفو عند عدم توفره: ${allowSwitch ? "نعم" : "لا"}`);
         lines.push("");
-        lines.push("ملخص الفاتورة:");
-        const beforeTotal = Number(cartTotalsBefore()) || 0;
-        const afterTotal = Number(cartTotals()) || 0;
-        const discountValue = Math.max(0, beforeTotal - afterTotal);
-        const discountPct = beforeTotal > 0 ? (discountValue / beforeTotal) * 100 : 0;
-        lines.push(`الإجمالي قبل الخصم: $${formatMoney(beforeTotal)}`);
-        lines.push(`قيمة الخصم: $${formatMoney(discountValue)} (${formatMoney(discountPct)}%)`);
-        lines.push(`الإجمالي بعد الخصم: $${formatMoney(afterTotal)}`);
-        lines.push("");
-        lines.push(`عدد المواد: ${cartCountTotal()} — عدد الأصناف: ${state.cart.size}`);
-        lines.push("المواد:");
-        let idx = 1;
+        lines.push("تفاصيل الطلب:");
         for (const it of state.cart.values()) {
-          lines.push(`${idx}- ${String(it.product.about ?? "").trim() || "—"}`);
-          lines.push(`   CODE2: ${String(it.product.code2 ?? "").trim() || "—"}`);
-          lines.push(`   العدد: ${it.qty}`);
-          idx += 1;
-        }
-        lines.push("");
-        lines.push(
-          'قد نرسل لكم الفاتورة ناقصة "أحياناً" لقطعة أو أكثر مثلاً بسبب فقدها بالمخزون أو تأخر بالمزامنة بين المستودع والموقع الإلكتروني أو بسبب زحمة وضغط وللسرعة نرسلها بدونها'
-        );
-
-        if (allowFamilySwitch) {
+          const discountPct = Math.round((Number(it.product.discountPercent) || 0) * 100);
+          lines.push(`- CODE1: ${it.product.code1}`);
+          lines.push(`  CODE2: ${it.product.code2}`);
+          lines.push(`  ${it.product.about}`);
+          lines.push(`  الكمية: ${it.qty}`);
+          lines.push(`  السعر قبل الخصم: $${formatMoney(it.product.priceBefore)}`);
+          lines.push(`  نسبة الخصم: ${discountPct}%`);
+          lines.push(`  السعر بعد الخصم: $${formatMoney(it.product.priceAfter)}`);
+          lines.push(`  المجموع قبل الخصم: $${formatMoney(it.qty * it.product.priceBefore)}`);
+          lines.push(`  المجموع بعد الخصم: $${formatMoney(it.qty * it.product.priceAfter)}`);
           lines.push("");
-          lines.push(
-            'ملاحظة التبديل: لا أمانع من تبديل منتج بأقرب شي متوفر من نفس العائلة (يمكن ترجيع مجاناً في حال أي غلط أو شيء لم يناسبك)'
-          );
         }
-
-        if (enableAlt && (altOriginalCode || altCodes.length > 0)) {
-          lines.push("");
-          lines.push("قسم البدائل (اختياري):");
-          if (altOriginalCode) {
-            const p = findProductByAnyCode(altOriginalCode);
-            if (p) lines.push(`الأصل: ${p.about} — ${p.code1}/${p.code2} — $${formatMoney(p.priceAfter)}`);
-            else lines.push(`الأصل: ${altOriginalCode}`);
-          }
-          if (altCodes.length > 0) {
-            lines.push("بدائل ممكنة:");
-            for (const c of altCodes) {
-              const p = findProductByAnyCode(c);
-              if (p) lines.push(`- ${p.about} — ${p.code1}/${p.code2} — $${formatMoney(p.priceAfter)}`);
-              else lines.push(`- ${c}`);
-            }
-          }
-        }
+        lines.push(`الإجمالي قبل الخصم: $${formatMoney(cartTotalsBefore())}`);
+        lines.push(`الإجمالي بعد الخصم: $${formatMoney(cartTotals())}`);
         return lines.join("\n").trim();
       }
 
@@ -4112,8 +3916,6 @@
         writeRtl("رقم الهاتف:", 12, 0);
         writeLtr(phone || "—", 12, 1.5);
         if (shipCurrency) writeRtl(`شحن العملة: ${shipCurrency}`, 12, 1);
-        if (shipCurrency === "سوري")
-          writeRtl("ملاحظة: سيتم تطبيق زيادة + 1.5 ل.س جديدة لسعر صرف لحظة الإرسال بسبب تذبذب الصرف", 11, 1.5);
         writeRtl(`طريقة الاستلام: ${shipLine}`, 12, 1);
         writeRtl(`بديل توتال إلى وادفو عند عدم توفره: ${allowSwitch ? "نعم" : "لا"}`, 12, 1.5);
         if (notes) writeRtl(`ملاحظات: ${notes}`, 12, 2);
@@ -4135,37 +3937,6 @@
           writeRtl(`${i + 1}- ${about || "—"}`, 12, 1);
           if (code2) writeLtr(`Code2: ${code2}`, 11, 1);
           writeRtl(`العدد: ${qty}`, 11, 2.2);
-        }
-
-        writeRtl(
-          'قد نرسل لكم الفاتورة ناقصة "أحياناً" لقطعة أو أكثر مثلاً بسبب فقدها بالمخزون أو تأخر بالمزامنة بين المستودع والموقع الإلكتروني أو بسبب زحمة وضغط وللسرعة نرسلها بدونها',
-          11,
-          1.5
-        );
-
-        if (allowFamilySwitch) {
-          writeRtl(
-            'لا أمانع من تبديل منتج بأقرب شي متوفر من نفس العائلة , مثال " مثقب كهرباء 500 وات بدال 550 وات , مفك طول 30 سم بدل مفك طول 20 سم , بمعنى نختار الأقرب والأنسب في حال لم نجده للسرعة تجهيز الطلب , يمكن ترجيع مجاناً في حال أي غلط أو شيء لم يناسبك"',
-            11,
-            2
-          );
-        }
-
-        if (enableAlt && (altOriginalCode || altCodes.length > 0)) {
-          writeRtl("قسم البدائل (اختياري):", 13, 1.5);
-          if (altOriginalCode) {
-            const p = findProductByAnyCode(altOriginalCode);
-            if (p) writeRtl(`الأصل: ${p.about} — ${p.code1}/${p.code2} — $${formatMoney(p.priceAfter)}`, 11, 1);
-            else writeRtl(`الأصل: ${altOriginalCode}`, 11, 1);
-          }
-          if (altCodes.length > 0) {
-            writeRtl("بدائل ممكنة:", 12, 1);
-            for (const c of altCodes) {
-              const p = findProductByAnyCode(c);
-              if (p) writeRtl(`- ${p.about} — ${p.code1}/${p.code2} — $${formatMoney(p.priceAfter)}`, 11, 1);
-              else writeRtl(`- ${c}`, 11, 1);
-            }
-          }
         }
 
         return pdf.output("blob");
@@ -4611,9 +4382,6 @@
           els.shipUsdInput,
           els.shipSypInput,
           els.allowVodafoneSwitchInput,
-          els.allowFamilySwitchInput,
-          els.enableAltSectionInput,
-          els.altOriginalCodeInput,
         ].filter(Boolean);
         const saveDraftDebounced = debounce(() => saveCustomerDraft(), 250);
         for (const el of draftInputs) {
@@ -4650,99 +4418,6 @@
         els.shipSypInput.addEventListener("change", () => syncCurrency("SYP"));
         syncCurrency("USD");
 
-        const initAltSection = () => {
-          if (!(els.enableAltSectionInput instanceof HTMLInputElement)) return;
-          if (!(els.altSection instanceof HTMLElement)) return;
-          if (!(els.altCodesList instanceof HTMLElement)) return;
-          if (!(els.addAltBtn instanceof HTMLElement)) return;
-
-          const applyEnabled = () => {
-            els.altSection.style.display = els.enableAltSectionInput.checked ? "grid" : "none";
-          };
-
-          const updateOriginalPreview = () => {
-            if (!(els.altOriginalPreview instanceof HTMLElement)) return;
-            const code = String(els.altOriginalCodeInput?.value ?? "").trim();
-            els.altOriginalPreview.innerHTML = renderAltProductPreviewHtml(code);
-          };
-
-          const updateAddBtn = () => {
-            const count = els.altCodesList.querySelectorAll("input[data-alt-code]").length;
-            els.addAltBtn.toggleAttribute("disabled", count >= 10);
-            els.addAltBtn.classList.toggle("btn-disabled", count >= 10);
-          };
-
-          const addAltRow = (value = "") => {
-            const count = els.altCodesList.querySelectorAll("input[data-alt-code]").length;
-            if (count >= 10) return showToast("الحد الأقصى للبدائل هو 10", 2200);
-
-            const row = document.createElement("div");
-            row.style.display = "grid";
-            row.style.gap = "6px";
-
-            const input = document.createElement("input");
-            input.type = "text";
-            input.placeholder = "اكتب CODE1 أو CODE2 للبديل";
-            input.value = String(value ?? "");
-            input.setAttribute("data-alt-code", "1");
-            input.style.padding = "12px";
-            input.style.border = "1px solid var(--border)";
-            input.style.borderRadius = "12px";
-            input.style.direction = "ltr";
-            input.style.unicodeBidi = "plaintext";
-
-            const preview = document.createElement("div");
-            preview.setAttribute("data-alt-preview", "1");
-            preview.style.display = "grid";
-            preview.style.gap = "8px";
-
-            const update = () => {
-              preview.innerHTML = renderAltProductPreviewHtml(input.value);
-              updateAddBtn();
-              saveDraftDebounced();
-            };
-            input.addEventListener("input", update);
-            input.addEventListener("change", update);
-
-            row.appendChild(input);
-            row.appendChild(preview);
-            els.altCodesList.appendChild(row);
-            update();
-          };
-
-          els.enableAltSectionInput.addEventListener("change", () => {
-            applyEnabled();
-            if (els.enableAltSectionInput.checked && els.altCodesList.querySelectorAll("input[data-alt-code]").length === 0) addAltRow("");
-            saveDraftDebounced();
-          });
-
-          if (els.altOriginalCodeInput) {
-            els.altOriginalCodeInput.addEventListener("input", () => {
-              updateOriginalPreview();
-              saveDraftDebounced();
-            });
-            els.altOriginalCodeInput.addEventListener("change", () => {
-              updateOriginalPreview();
-              saveDraftDebounced();
-            });
-          }
-
-          els.addAltBtn.addEventListener("click", () => addAltRow(""));
-
-          const draft = state.customerDraft && typeof state.customerDraft === "object" ? state.customerDraft : null;
-          if (draft && Array.isArray(draft.altCodes) && draft.altCodes.length > 0) {
-            els.altCodesList.innerHTML = "";
-            for (const c of draft.altCodes) addAltRow(c);
-          } else if (els.altCodesList.querySelectorAll("input[data-alt-code]").length === 0) {
-            addAltRow("");
-          }
-
-          applyEnabled();
-          updateOriginalPreview();
-          updateAddBtn();
-        };
-        initAltSection();
-
         els.checkoutForm.addEventListener("submit", async (e) => {
           e.preventDefault();
           if (state.cart.size === 0) return;
@@ -4762,15 +4437,6 @@
           const shipCurrency = els.shipSypInput.checked ? "سوري" : "دولار";
           const notes = String(els.orderNotesInput.value ?? "").trim();
           const allowSwitch = Boolean(els.allowVodafoneSwitchInput.checked);
-          const allowFamilySwitch = Boolean(els.allowFamilySwitchInput?.checked);
-          const enableAlt = Boolean(els.enableAltSectionInput?.checked);
-          const altOriginalCode = String(els.altOriginalCodeInput?.value ?? "").trim();
-          const altCodes = els.altCodesList
-            ? Array.from(els.altCodesList.querySelectorAll("input[data-alt-code]"))
-                .map((x) => String(x.value ?? "").trim())
-                .filter(Boolean)
-                .slice(0, 10)
-            : [];
           try {
             saveCustomerDraft();
           } catch {}
@@ -4787,12 +4453,8 @@
             shipCurrency,
             notes,
             allowSwitch,
-            allowFamilySwitch,
-            enableAlt,
-            altOriginalCode,
-            altCodes,
           });
-          addOrderToHistory({ createdAt, name, gov, phone, shipType, shipCurrency, notes, allowSwitch, invoice, allowFamilySwitch, enableAlt, altOriginalCode, altCodes });
+          addOrderToHistory({ createdAt, name, gov, phone, shipType, shipCurrency, notes, allowSwitch, invoice });
           state.lastInvoiceText = invoice;
           els.copyInvoiceBtn.style.display = "";
           els.invoiceNote.style.display = "";
@@ -4812,10 +4474,6 @@
               shipCurrency,
               notes,
               allowSwitch,
-              allowFamilySwitch,
-              enableAlt,
-              altOriginalCode,
-              altCodes,
             });
             await sendPdfToTelegram(pdfBlob, `${sanitizeFilename(name)}.pdf`);
             els.confirmOrderBtn.textContent = "تم إرسال الطلب";
@@ -4853,23 +4511,6 @@
       }
 
       async function loadProducts() {
-        if (location.protocol === "file:") {
-          els.hint.textContent = "فشل التحميل";
-          setStatus(
-            "لا يمكن تحميل products.csv عند فتح الصفحة مباشرة من الملفات (file://). افتحها عبر GitHub Pages أو شغّل سيرفر محلي مثل Live Server.",
-            true
-          );
-          if (els.grid) els.grid.innerHTML = "";
-          setHomeStatus("افتح الصفحة عبر GitHub Pages أو سيرفر محلي.", true);
-          return;
-        }
-        if (location.hostname === "github.com" && String(location.pathname || "").includes("/blob/")) {
-          els.hint.textContent = "لن تعمل الصفحة داخل GitHub";
-          setStatus("افتح الملف عبر GitHub Pages أو اضغط Raw ثم افتح الصفحة. GitHub (blob) يرجع HTML بدل CSV فيتجمد التحميل.", true);
-          if (els.grid) els.grid.innerHTML = "";
-          setHomeStatus("افتح الصفحة عبر GitHub Pages.", true);
-          return;
-        }
         const loadingText = "جاري تحميل الصفحة";
         const slowNote = "الصفحة تحمل ببطء لقد شارفت على الانتهاء\nتأكد من سرعة الأنترنيت لديك";
         els.hint.textContent = `${loadingText}...`;
@@ -4880,58 +4521,22 @@
         }, 1800);
         try {
           await Promise.all([loadInfoPages(), loadOutOfStockSet()]);
-          let got = null;
-          let lastErr = "";
-          for (const u of CONFIG.CSV_URLS || []) {
-            const url = String(u ?? "").trim();
-            if (!url) continue;
-            try {
-              const controller = typeof AbortController === "function" ? new AbortController() : null;
-              const timer = controller ? window.setTimeout(() => controller.abort(), 20000) : null;
-              const res = await fetch(url, { cache: "no-store", signal: controller ? controller.signal : undefined });
-              if (timer) window.clearTimeout(timer);
-              if (!res.ok) {
-                lastErr = `HTTP ${res.status} عند تحميل ${url}`;
-                continue;
-              }
-              const text = await res.text();
-              if (!String(text ?? "").trim()) {
-                lastErr = `ملف فارغ: ${url}`;
-                continue;
-              }
-              got = { url, text };
-              break;
-            } catch (e) {
-              lastErr = `${String(e?.name ?? "Error")}: ${String(e?.message ?? e ?? "")}`.trim() || "Fetch error";
-            }
-          }
+          const got = await fetchTextCached(CONFIG.CSV_URL, 6 * 60 * 60 * 1000);
           if (!got) {
             els.hint.textContent = "فشل التحميل";
-            setStatus(
-              `فشل تحميل products.csv. ${lastErr ? `(${lastErr}) ` : ""}تأكد أن products.csv موجود بنفس مجلد index.html على GitHub Pages وبنفس الاسم.`,
-              true
-            );
+            setStatus("فشل تحميل products.csv. تأكد أن الملف موجود بنفس المجلد على GitHub Pages وبنفس الاسم.", true);
             els.grid.innerHTML = "";
             setHomeStatus("فشل تحميل المنتجات.", true);
             return;
           }
           const data = String(got.text ?? "");
-          const head = data.slice(0, 250).toLowerCase();
-          if (head.includes("<!doctype html") || head.includes("<html")) throw new Error("Wrong content (HTML)");
           const lines = data.split(/\r?\n/).filter((l) => l.trim().length > 0);
-          if (lines.length === 0) throw new Error("Empty CSV");
+          if (lines.length <= 1) throw new Error("Empty CSV");
 
-          const firstLine = String(lines[0] ?? "").replace(/^\uFEFF/, "");
-          const delimiter = detectCsvDelimiter(firstLine);
-          const firstCols = parseCsvLine(firstLine, delimiter).map((x) => safeLower(cleanCell(x)));
-          const hasHeader =
-            firstCols.some((h) => h.includes("code1")) ||
-            firstCols.some((h) => h.includes("code2")) ||
-            firstCols.some((h) => h.includes("about"));
-          const startIdx = hasHeader ? 1 : 0;
-          if (lines.length - startIdx <= 0) throw new Error("Empty CSV");
+          const headerLine = String(lines[0] ?? "").replace(/^\uFEFF/, "");
+          const delimiter = detectCsvDelimiter(headerLine);
           const products = [];
-          for (let i = startIdx; i < lines.length; i++) {
+          for (let i = 1; i < lines.length; i++) {
             const colsRaw = parseCsvLine(lines[i], delimiter);
             const cols = normalizeCsvRow(colsRaw, delimiter, 5).map(cleanCell);
             const code1 = cols[0] ?? "";
@@ -4985,13 +4590,9 @@
           await loadHomeProducts();
           renderHome();
         } catch (e) {
-          const reason = String(e?.message ?? e ?? "").trim();
           els.hint.textContent = "فشل التحميل";
-          setStatus(
-            `فشل تحميل المنتجات. ${reason ? `السبب: ${reason}. ` : ""}تأكد أنك على GitHub Pages وأن products.csv موجود ويُفتح كرابط مباشر.`,
-            true
-          );
-          if (els.grid) els.grid.innerHTML = "";
+          setStatus("فشل تحميل products.csv. تأكد أن الملف موجود بنفس المجلد على GitHub Pages وبنفس الاسم.", true);
+          els.grid.innerHTML = "";
           setHomeStatus("فشل تحميل المنتجات.", true);
         }
       }
@@ -5141,21 +4742,17 @@
         const savedSort = String(localStorage.getItem("hjy_sort_mode_v1") ?? "").trim();
         if (savedSort) state.sortMode = savedSort;
       } catch {}
-      if (els.grid) els.grid.setAttribute("data-view", state.viewMode);
-      if (els.homeGrid) els.homeGrid.setAttribute("data-view", state.viewMode);
-      if (els.viewSelect) els.viewSelect.value = state.viewMode;
+      els.grid.setAttribute("data-view", state.viewMode);
+      els.homeGrid.setAttribute("data-view", state.viewMode);
+      els.viewSelect.value = state.viewMode;
       if (els.sortSelect) els.sortSelect.value = state.sortMode || "DEFAULT";
       updateCategoriesToggleLabel();
       updateFooterLinksVisibility();
       window.addEventListener("hashchange", applyHashRoute);
-      loadProducts()
-        .then(() => {
-          if (!location.hash) setHash("home");
-          applyHashRoute();
-        })
-        .catch((e) => {
-          reportBootError(String(e?.message ?? e ?? "فشل تحميل المنتجات"));
-        });
+      loadProducts().then(() => {
+        if (!location.hash) setHash("home");
+        applyHashRoute();
+      });
       renderCart();
     </script>
   </body>
