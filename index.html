@@ -1675,11 +1675,11 @@
             <div class="notice" id="checkoutDelayNote">الطلب يحتاج من 2 يوم إلى 10 أيام على الأكثر للإرسال بسبب ضغط طلبات</div>
             <div class="panel-sub" style="font-weight:900;color:var(--promo)">نحثكم على الاختيار WADFOW فهي الأسرع إرسالاً</div>
             <div class="panel-sub" style="font-weight:900">لسنا مسؤولين عن عدم قراءة قسم "أشيع الأسئلة" و "تفاصيل الشحن"</div>
-            <div style="display:flex;gap:10px;flex-wrap:wrap;max-width:520px">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;max-width:520px;margin-inline:auto">
               <button class="btn btn-ghost" id="checkoutFaqBtn" type="button" style="flex:1">الأشيع اسئلة</button>
               <button class="btn btn-ghost" id="checkoutShippingBtn" type="button" style="flex:1">تفاصيل الشحن</button>
             </div>
-            <form id="checkoutForm" style="display:grid;gap:10px;max-width:520px">
+            <form id="checkoutForm" style="display:grid;gap:10px;max-width:520px;margin-inline:auto">
               <label style="display:grid;gap:6px">
                 <span style="font-weight:800">اسم ثلاثي</span>
                 <input id="fullNameInput" type="text" autocomplete="name" required style="padding:12px;border:1px solid var(--border);border-radius:12px" />
@@ -1782,6 +1782,7 @@
               <div style="display:flex;gap:10px;flex-wrap:wrap">
                 <button class="btn btn-primary" id="confirmOrderBtn" type="submit" style="flex:1">إتمام الطلب</button>
                 <button class="btn btn-ghost" id="copyInvoiceBtn" type="button" style="flex:1;display:none">نسخ الفاتورة</button>
+                <a class="btn btn-ghost" id="downloadPdfBtn" href="#" download style="flex:1;display:none">تنزيل PDF</a>
               </div>
               <div class="mini-note" style="font-weight:900">
                 قد يحدث بطئ مزامنة بين المستودع والموقع الإلكتروني , قد لا يتم إرسال كامل الطلب ووجود بعض النقص للمواد أو لا ترسل بسبب التأخير , لذلك سيتم إرسال الفاتورة ولو هناك نقص مع خصم قيمة المفقود
@@ -1801,7 +1802,7 @@
                 يمكنك نسخ الفاتورة وإرسالها إلينا على الواتساب. الفاتورة المنسوخة تحتوي كل التفاصيل بشكل مرتب وسطر تحت سطر.
               </div>
             </form>
-            <div id="orderSummary" style="display:grid;gap:10px"></div>
+            <div id="orderSummary" style="display:grid;gap:10px;max-width:520px;margin-inline:auto"></div>
           </div>
         </section>
 
@@ -2051,6 +2052,7 @@
         altPreview: document.getElementById("altPreview"),
         confirmOrderBtn: document.getElementById("confirmOrderBtn"),
         copyInvoiceBtn: document.getElementById("copyInvoiceBtn"),
+        downloadPdfBtn: document.getElementById("downloadPdfBtn"),
         invoiceNote: document.getElementById("invoiceNote"),
         whatsappAfterOrder: document.getElementById("whatsappAfterOrder"),
         orderSummary: document.getElementById("orderSummary"),
@@ -2091,6 +2093,7 @@
         orders: [],
         lastQueryTokens: [],
         lastInvoiceText: "",
+        lastPdfUrl: "",
         viewMode: "compact",
         outOfStockSets: { TOTAL: new Set(), WADFOW: new Set() },
         infoPages: new Map(),
@@ -2482,7 +2485,7 @@
         if (!t) return y;
         doc.setFontSize(fontSize);
         const lines = doc.splitTextToSize(t, maxWidth);
-        doc.text(lines, xRight, y, { align: "right" });
+        doc.text(lines, xRight, y, { align: "right", lang: "ar" });
         return y + pdfLineHeight(doc, fontSize) * lines.length;
       }
 
@@ -2491,8 +2494,131 @@
         if (!t) return y;
         doc.setFontSize(fontSize);
         const lines = doc.splitTextToSize(t, maxWidth);
-        doc.text(lines, xLeft, y, { align: "left" });
+        doc.text(lines, xLeft, y, { align: "left", lang: "en" });
         return y + pdfLineHeight(doc, fontSize) * lines.length;
+      }
+
+      function shapeArabicForPdf(input) {
+        const s = String(input ?? "");
+        if (!/[\u0600-\u06FF]/.test(s)) return s;
+
+        const forms = new Map([
+          ["\u0621", ["\uFE80", "\uFE80", "\uFE80", "\uFE80"]],
+          ["\u0622", ["\uFE81", "\uFE82", "\uFE81", "\uFE82"]],
+          ["\u0623", ["\uFE83", "\uFE84", "\uFE83", "\uFE84"]],
+          ["\u0624", ["\uFE85", "\uFE86", "\uFE85", "\uFE86"]],
+          ["\u0625", ["\uFE87", "\uFE88", "\uFE87", "\uFE88"]],
+          ["\u0626", ["\uFE89", "\uFE8A", "\uFE8B", "\uFE8C"]],
+          ["\u0627", ["\uFE8D", "\uFE8E", "\uFE8D", "\uFE8E"]],
+          ["\u0628", ["\uFE8F", "\uFE90", "\uFE91", "\uFE92"]],
+          ["\u0629", ["\uFE93", "\uFE94", "\uFE93", "\uFE94"]],
+          ["\u062A", ["\uFE95", "\uFE96", "\uFE97", "\uFE98"]],
+          ["\u062B", ["\uFE99", "\uFE9A", "\uFE9B", "\uFE9C"]],
+          ["\u062C", ["\uFE9D", "\uFE9E", "\uFE9F", "\uFEA0"]],
+          ["\u062D", ["\uFEA1", "\uFEA2", "\uFEA3", "\uFEA4"]],
+          ["\u062E", ["\uFEA5", "\uFEA6", "\uFEA7", "\uFEA8"]],
+          ["\u062F", ["\uFEA9", "\uFEAA", "\uFEA9", "\uFEAA"]],
+          ["\u0630", ["\uFEAB", "\uFEAC", "\uFEAB", "\uFEAC"]],
+          ["\u0631", ["\uFEAD", "\uFEAE", "\uFEAD", "\uFEAE"]],
+          ["\u0632", ["\uFEAF", "\uFEB0", "\uFEAF", "\uFEB0"]],
+          ["\u0633", ["\uFEB1", "\uFEB2", "\uFEB3", "\uFEB4"]],
+          ["\u0634", ["\uFEB5", "\uFEB6", "\uFEB7", "\uFEB8"]],
+          ["\u0635", ["\uFEB9", "\uFEBA", "\uFEBB", "\uFEBC"]],
+          ["\u0636", ["\uFEBD", "\uFEBE", "\uFEBF", "\uFEC0"]],
+          ["\u0637", ["\uFEC1", "\uFEC2", "\uFEC3", "\uFEC4"]],
+          ["\u0638", ["\uFEC5", "\uFEC6", "\uFEC7", "\uFEC8"]],
+          ["\u0639", ["\uFEC9", "\uFECA", "\uFECB", "\uFECC"]],
+          ["\u063A", ["\uFECD", "\uFECE", "\uFECF", "\uFED0"]],
+          ["\u0641", ["\uFED1", "\uFED2", "\uFED3", "\uFED4"]],
+          ["\u0642", ["\uFED5", "\uFED6", "\uFED7", "\uFED8"]],
+          ["\u0643", ["\uFED9", "\uFEDA", "\uFEDB", "\uFEDC"]],
+          ["\u0644", ["\uFEDD", "\uFEDE", "\uFEDF", "\uFEE0"]],
+          ["\u0645", ["\uFEE1", "\uFEE2", "\uFEE3", "\uFEE4"]],
+          ["\u0646", ["\uFEE5", "\uFEE6", "\uFEE7", "\uFEE8"]],
+          ["\u0647", ["\uFEE9", "\uFEEA", "\uFEEB", "\uFEEC"]],
+          ["\u0648", ["\uFEED", "\uFEEE", "\uFEED", "\uFEEE"]],
+          ["\u0649", ["\uFEEF", "\uFEF0", "\uFEEF", "\uFEF0"]],
+          ["\u064A", ["\uFEF1", "\uFEF2", "\uFEF3", "\uFEF4"]],
+          ["\u0671", ["\uFB50", "\uFB51", "\uFB50", "\uFB51"]],
+          ["\u06CC", ["\uFBFC", "\uFBFD", "\uFBFE", "\uFBFF"]],
+          ["\u06A9", ["\uFB8E", "\uFB8F", "\uFB90", "\uFB91"]],
+          ["\u06AF", ["\uFB92", "\uFB93", "\uFB94", "\uFB95"]],
+        ]);
+
+        const nonJoinLeft = new Set([
+          "\u0621",
+          "\u0622",
+          "\u0623",
+          "\u0624",
+          "\u0625",
+          "\u0627",
+          "\u0629",
+          "\u062F",
+          "\u0630",
+          "\u0631",
+          "\u0632",
+          "\u0648",
+          "\u0649",
+        ]);
+
+        const isArabicLetter = (ch) => forms.has(ch);
+        const canConnectFromPrev = (ch) => isArabicLetter(ch) && ch !== "\u0621";
+        const canConnectToNext = (ch) => isArabicLetter(ch) && !nonJoinLeft.has(ch) && ch !== "\u0621";
+
+        const chars = Array.from(s);
+        const out = [];
+
+        const isJoiner = (ch) => isArabicLetter(ch);
+        const isDiacritic = (ch) => ch >= "\u064B" && ch <= "\u065F";
+
+        const prevLetterIndex = (idx) => {
+          for (let i = idx - 1; i >= 0; i--) {
+            const ch = chars[i];
+            if (isDiacritic(ch)) continue;
+            if (isJoiner(ch)) return i;
+            return -1;
+          }
+          return -1;
+        };
+
+        const nextLetterIndex = (idx) => {
+          for (let i = idx + 1; i < chars.length; i++) {
+            const ch = chars[i];
+            if (isDiacritic(ch)) continue;
+            if (isJoiner(ch)) return i;
+            return -1;
+          }
+          return -1;
+        };
+
+        for (let i = 0; i < chars.length; i++) {
+          const ch = chars[i];
+          if (!isArabicLetter(ch)) {
+            out.push(ch);
+            continue;
+          }
+
+          const pIdx = prevLetterIndex(i);
+          const nIdx = nextLetterIndex(i);
+          const prevCh = pIdx >= 0 ? chars[pIdx] : "";
+          const nextCh = nIdx >= 0 ? chars[nIdx] : "";
+
+          const joinsPrev = prevCh ? canConnectToNext(prevCh) && canConnectFromPrev(ch) : false;
+          const joinsNext = nextCh ? canConnectToNext(ch) && canConnectFromPrev(nextCh) : false;
+
+          const f = forms.get(ch);
+          if (!f) {
+            out.push(ch);
+            continue;
+          }
+
+          if (joinsPrev && joinsNext) out.push(f[3]);
+          else if (joinsPrev && !joinsNext) out.push(f[1]);
+          else if (!joinsPrev && joinsNext) out.push(f[2]);
+          else out.push(f[0]);
+        }
+
+        return out.join("");
       }
 
       function productKey(p) {
@@ -2642,7 +2768,21 @@
         const altGroups = enableAlt ? readAltGroupsFromDom() : [];
         localStorage.setItem(
           "hjy_customer_v1",
-          JSON.stringify({ name, gov, phone, shipType, homsAddress, shipCenter, notes, shipCurrency, allowSwitch })
+          JSON.stringify({
+            name,
+            gov,
+            phone,
+            shipType,
+            homsAddress,
+            shipCenter,
+            notes,
+            shipCurrency,
+            allowSwitch,
+            allowFamilySwitch,
+            fastShipEvenIfMissing,
+            enableAlt,
+            altGroups,
+          })
         );
       }
 
@@ -2797,7 +2937,9 @@
                   <div style="font-weight:900">بديل: ${escapeHtml(p.code1)} ${escapeHtml(p.code2 || "")}</div>
                   <div class="panel-sub" style="margin-top:4px">${escapeHtml(String(p.about || ""))}</div>
                 </div>
-                <div style="direction:ltr;unicode-bidi:plaintext;font-weight:900;color:var(--primary-3)">$${formatMoney(Number(p.priceAfter) || 0)}</div>
+                <div style="direction:ltr;unicode-bidi:plaintext;font-weight:900;color:var(--primary-3)">$${formatMoney(Number(p.priceAfter) || 0)} × ${escapeHtml(
+              String(r.qty || 0)
+            )}</div>
               </div>`;
           }
 
@@ -3737,6 +3879,10 @@
         const shipCurrency = String(details.shipCurrency ?? "").trim();
         const notes = String(details.notes ?? "").trim();
         const allowSwitch = Boolean(details.allowSwitch);
+        const allowFamilySwitch = Boolean(details.allowFamilySwitch);
+        const fastShipEvenIfMissing = Boolean(details.fastShipEvenIfMissing);
+        const enableAlt = Boolean(details.enableAlt);
+        const altGroups = Array.isArray(details.altGroups) ? details.altGroups : [];
         const createdAt = Number(details.createdAt) || Date.now();
         const lines = [];
         lines.push("طلب جديد");
@@ -3754,6 +3900,28 @@
         }
         if (notes) lines.push(`ملاحظات الطلب: ${notes}`);
         lines.push(`بديل توتال إلى وادفو عند عدم توفره: ${allowSwitch ? "نعم" : "لا"}`);
+        lines.push(
+          `تبديل قريب جداً بنفس العائلة عند عدم توفر المنتج: ${allowFamilySwitch ? "نعم" : "لا"}`
+        );
+        lines.push(
+          `إرسال الطلب بأسرع ما يمكن ولو كان يوجد بعض النقص: ${fastShipEvenIfMissing ? "نعم" : "لا"}`
+        );
+        lines.push(`تفعيل البدائل الاحتياطية: ${enableAlt ? "نعم" : "لا"}`);
+        if (enableAlt) {
+          const groups = normalizeAltGroups(altGroups);
+          for (let i = 0; i < groups.length; i++) {
+            const g = groups[i];
+            const original = String(g.original ?? "").trim();
+            const alts = Array.isArray(g.alts) ? g.alts : [];
+            if (!original && alts.every((x) => !String(x ?? "").trim())) continue;
+            lines.push(`مجموعة بدائل ${i + 1}:`);
+            if (original) lines.push(`  الأصلي: ${original}`);
+            for (let ai = 0; ai < alts.length; ai++) {
+              const c = String(alts[ai] ?? "").trim();
+              if (c) lines.push(`  بديل ${ai + 1}: ${c}`);
+            }
+          }
+        }
         lines.push("");
         lines.push("تفاصيل الطلب:");
         for (const it of state.cart.values()) {
@@ -3857,21 +4025,29 @@
         const shipCurrency = String(details.shipCurrency ?? "").trim();
         const notes = String(details.notes ?? "").trim();
         const allowSwitch = Boolean(details.allowSwitch);
+        const allowFamilySwitch = Boolean(details.allowFamilySwitch);
+        const fastShipEvenIfMissing = Boolean(details.fastShipEvenIfMissing);
+        const enableAlt = Boolean(details.enableAlt);
+        const altGroups = Array.isArray(details.altGroups) ? details.altGroups : [];
 
-        const pdf = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
-        const margin = 12;
+        const pdf = new jsPDF({ orientation: "l", unit: "mm", format: "a4" });
+        const margin = 10;
         const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
         const xRight = pageWidth - margin;
         const maxWidth = pageWidth - margin * 2;
 
         try {
           const base64 = await loadPdfFontBase64();
           pdf.addFileToVFS(PDF_FONT.vfsName, base64);
-          pdf.addFont(PDF_FONT.vfsName, PDF_FONT.family, "normal");
+          pdf.addFont(PDF_FONT.vfsName, PDF_FONT.family, "normal", "Identity-H");
           pdf.setFont(PDF_FONT.family, "normal");
         } catch {
           pdf.setFont("helvetica", "normal");
         }
+        try {
+          if (typeof pdf.setR2L === "function") pdf.setR2L(true);
+        } catch {}
 
         const xLeft = margin;
         const beforeTotal = Number(cartTotalsBefore()) || 0;
@@ -3883,61 +4059,286 @@
             ? `استلام ضمن حمص${homsAddress ? ` — ${homsAddress}` : ""}`
             : `شحن للمحافظات${shipCenter ? ` — ${shipCenter}` : ""}`;
 
+        const C = {
+          primary: [10, 163, 163],
+          primaryDark: [10, 116, 116],
+          text: [11, 43, 42],
+          muted: [75, 107, 105],
+          danger: [198, 40, 40],
+          gray: [110, 110, 110],
+          headerBg: [10, 163, 163],
+        };
+
+        const writeRtl = (text, x, y, w, size, color = C.text) => {
+          const t = shapeArabicForPdf(String(text ?? "").trim());
+          if (!t) return { y, lines: [] };
+          pdf.setTextColor(...color);
+          pdf.setFontSize(size);
+          const lines = pdf.splitTextToSize(t, Math.max(1, w));
+          pdf.text(lines, x, y, { align: "right", lang: "ar" });
+          return { y: y + pdfLineHeight(pdf, size) * lines.length, lines };
+        };
+
+        const writeLtr = (text, x, y, w, size, color = C.text, align = "left") => {
+          const t = String(text ?? "").trim();
+          if (!t) return { y, lines: [] };
+          pdf.setTextColor(...color);
+          pdf.setFontSize(size);
+          const lines = pdf.splitTextToSize(t, Math.max(1, w));
+          pdf.text(lines, x, y, { align, lang: "en" });
+          return { y: y + pdfLineHeight(pdf, size) * lines.length, lines };
+        };
+
+        const drawTopHeader = (y) => {
+          pdf.setTextColor(...C.muted);
+          pdf.setFontSize(9);
+          pdf.text(shapeArabicForPdf(`تاريخ ووقت الإصدار: ${formatOrderDate(createdAt)}`), xRight, y, { align: "right", lang: "ar" });
+          pdf.text(shapeArabicForPdf("فاتورة"), xLeft, y, { align: "left", lang: "ar" });
+          y += 8;
+          pdf.setTextColor(...C.primaryDark);
+          pdf.setFontSize(20);
+          pdf.text("TOTAL SYRIA TOOLS", pageWidth / 2, y, { align: "center", lang: "en" });
+          y += 7;
+          pdf.setTextColor(...C.muted);
+          pdf.setFontSize(10);
+          pdf.text(shapeArabicForPdf("شركة توتال سوريا"), pageWidth / 2, y, { align: "center", lang: "ar" });
+          return y + 8;
+        };
+
+        const box = (x, y, w, h) => {
+          pdf.setDrawColor(11, 43, 42);
+          try {
+            pdf.roundedRect(x, y, w, h, 3, 3);
+          } catch {
+            pdf.rect(x, y, w, h);
+          }
+        };
+
         let y = margin;
+        y = drawTopHeader(y);
 
-        const writeRtl = (text, fontSize = 12, extraGap = 0) => {
-          const t = String(text ?? "").trim();
-          if (!t) return;
-          pdf.setFontSize(fontSize);
-          const lines = pdf.splitTextToSize(t, maxWidth);
-          const needed = pdfLineHeight(pdf, fontSize) * lines.length + extraGap;
-          y = pdfEnsureRoom(pdf, y, needed, margin);
-          y = pdfWriteRtl(pdf, t, xRight, y, maxWidth, fontSize);
-          y += extraGap;
-        };
+        const customerBoxH = 36;
+        box(margin, y, maxWidth, customerBoxH);
+        let cy = y + 8;
+        const colGap = 10;
+        const colW = (maxWidth - colGap) / 2;
+        const rightColX = margin + maxWidth;
+        const leftColX = margin + colW;
 
-        const writeLtr = (text, fontSize = 11, extraGap = 0) => {
-          const t = String(text ?? "").trim();
-          if (!t) return;
-          pdf.setFontSize(fontSize);
-          const lines = pdf.splitTextToSize(t, maxWidth);
-          const needed = pdfLineHeight(pdf, fontSize) * lines.length + extraGap;
-          y = pdfEnsureRoom(pdf, y, needed, margin);
-          y = pdfWriteLtr(pdf, t, xLeft, y, maxWidth, fontSize);
-          y += extraGap;
-        };
+        cy = writeRtl(`الاسم: ${name || "—"}`, rightColX - 6, cy, colW - 12, 12).y;
+        cy = writeRtl(`المحافظة: ${gov || "—"}`, rightColX - 6, cy, colW - 12, 12).y;
+        cy = writeRtl(`طريقة الاستلام: ${shipLine || "—"}`, rightColX - 6, cy, colW - 12, 11, C.muted).y;
 
-        writeRtl("TOTAL TOOLS SYRIA", 18, 1.5);
-        writeRtl("فاتورة طلب", 13, 3);
+        let ly = y + 8;
+        ly = writeRtl("رقم الهاتف:", leftColX - 6, ly, colW - 12, 12).y;
+        ly = writeLtr(phone || "—", margin + 6, ly - 0.5, colW - 12, 12, C.text, "left").y;
+        ly = writeRtl(`الدفع: ${shipCurrency || "—"}`, leftColX - 6, ly, colW - 12, 12).y;
 
-        writeRtl(`تاريخ الطلب: ${formatOrderDate(createdAt)}`, 11, 1.5);
-        writeRtl(`الاسم: ${name}`, 12, 1);
-        writeRtl(`المحافظة: ${gov}`, 12, 1);
-        writeRtl("رقم الهاتف:", 12, 0);
-        writeLtr(phone || "—", 12, 1.5);
-        if (shipCurrency) writeRtl(`شحن العملة: ${shipCurrency}`, 12, 1);
-        writeRtl(`طريقة الاستلام: ${shipLine}`, 12, 1);
-        writeRtl(`بديل توتال إلى وادفو عند عدم توفره: ${allowSwitch ? "نعم" : "لا"}`, 12, 1.5);
-        if (notes) writeRtl(`ملاحظات: ${notes}`, 12, 2);
+        y = y + customerBoxH + 8;
 
-        writeRtl("ملخص الفاتورة:", 13, 1.5);
-        writeRtl(`الإجمالي قبل الخصم: $${formatMoney(beforeTotal)}`, 12, 1);
-        writeRtl(`قيمة الخصم: $${formatMoney(discountValue)} (${formatMoney(discountPct)}%)`, 12, 1);
-        writeRtl(`الإجمالي بعد الخصم: $${formatMoney(afterTotal)}`, 12, 3);
-
-        const items = Array.from(state.cart.values());
         const totalQty = cartCountTotal();
-        writeRtl(`المواد (${items.length} صنف) — عدد المواد: ${totalQty}`, 13, 2);
+        const items = Array.from(state.cart.values());
+
+        const optionsLines = [
+          `بديل توتال إلى وادفو عند عدم توفره: ${allowSwitch ? "نعم" : "لا"}`,
+          `تبديل قريب جداً بنفس العائلة عند عدم توفر المنتج: ${allowFamilySwitch ? "نعم" : "لا"}`,
+          `إرسال الطلب بأسرع ما يمكن ولو كان يوجد بعض النقص: ${fastShipEvenIfMissing ? "نعم" : "لا"}`,
+          `تفعيل البدائل الاحتياطية: ${enableAlt ? "نعم" : "لا"}`,
+        ];
+
+        const normalizedAltGroups = enableAlt ? normalizeAltGroups(altGroups) : [];
+        const altPreviewData = enableAlt ? buildAltPreviewData(normalizedAltGroups) : [];
+        const altCodesByCartKey = new Map();
+        if (enableAlt) {
+          for (const g of altPreviewData) {
+            const cartItem = g.originalCode ? findCartItemByAnyCode(g.originalCode) : null;
+            const k = cartItem ? productKey(cartItem.product) : "";
+            if (!k) continue;
+            const codes = g.alts.map((x) => String(x.code ?? "").trim()).filter(Boolean);
+            if (codes.length > 0) altCodesByCartKey.set(k, codes);
+          }
+        }
+
+        const cols = [
+          { key: "no", title: "#", w: 8, align: "center", dir: "ltr" },
+          { key: "code1", title: "CODE 1", w: 24, align: "left", dir: "ltr" },
+          { key: "code2", title: "CODE 2", w: 20, align: "left", dir: "ltr" },
+          { key: "about", title: "ABOUT", w: 92, align: "right", dir: "rtl" },
+          { key: "qty", title: "QTY", w: 12, align: "center", dir: "ltr" },
+          { key: "unitAfter", title: "U AFTER", w: 18, align: "right", dir: "ltr" },
+          { key: "unitBefore", title: "U BEFORE", w: 18, align: "right", dir: "ltr" },
+          { key: "disc", title: "DISC%", w: 12, align: "center", dir: "ltr" },
+          { key: "lineAfter", title: "T AFTER", w: 20, align: "right", dir: "ltr" },
+          { key: "lineBefore", title: "T BEFORE", w: 20, align: "right", dir: "ltr" },
+          { key: "alts", title: "ALTS", w: maxWidth - (8 + 24 + 20 + 92 + 12 + 18 + 18 + 12 + 20 + 20), align: "right", dir: "rtl" },
+        ];
+
+        const tableX = margin;
+        const headerH = 9;
+        const cellPadX = 1.6;
+        const fontBody = 9;
+        const fontHeader = 9.5;
+
+        const drawTableHeader = (yy) => {
+          pdf.setFillColor(...C.headerBg);
+          pdf.setDrawColor(255, 255, 255);
+          pdf.rect(tableX, yy, maxWidth, headerH, "F");
+          let cx = tableX;
+          pdf.setTextColor(255, 255, 255);
+          pdf.setFontSize(fontHeader);
+          for (const c of cols) {
+            pdf.rect(cx, yy, c.w, headerH);
+            const tx = c.dir === "rtl" ? cx + c.w - cellPadX : cx + cellPadX;
+            const align = c.dir === "rtl" ? "right" : c.align;
+            pdf.text(String(c.title), tx, yy + 6.2, { align, lang: c.dir === "rtl" ? "ar" : "en" });
+            cx += c.w;
+          }
+          return yy + headerH;
+        };
+
+        const ensureTableRoom = (yy, needed) => {
+          if (yy + needed <= pageHeight - margin) return yy;
+          pdf.addPage();
+          let ny = margin;
+          ny = drawTopHeader(ny);
+          ny = drawTableHeader(ny);
+          return ny;
+        };
+
+        const ensureRoom = (yy, needed) => {
+          if (yy + needed <= pageHeight - margin) return yy;
+          pdf.addPage();
+          let ny = margin;
+          ny = drawTopHeader(ny);
+          return ny;
+        };
+
+        pdf.setTextColor(...C.text);
+        pdf.setFontSize(12);
+        const metaLine = `المشتريات: ${items.length} صنف — عدد القطع الإجمالي: ${totalQty}`;
+        y = writeRtl(metaLine, xRight, y, maxWidth, 12, C.text).y + 4;
+
+        y = drawTableHeader(y);
 
         for (let i = 0; i < items.length; i++) {
           const it = items[i];
-          const about = String(it.product.about ?? "").trim();
-          const code2 = String(it.product.code2 ?? "").trim();
+          const p = it.product;
           const qty = Math.max(1, Math.min(999, Number(it.qty) || 1));
-          writeRtl(`${i + 1}- ${about || "—"}`, 12, 1);
-          if (code2) writeLtr(`Code2: ${code2}`, 11, 1);
-          writeRtl(`العدد: ${qty}`, 11, 2.2);
+          const discP = Math.round((Number(p.discountPercent) || 0) * 100);
+          const unitBefore = Number(p.priceBefore) || 0;
+          const unitAfter = Number(p.priceAfter) || 0;
+          const lineBefore = qty * unitBefore;
+          const lineAfter = qty * unitAfter;
+          const about = String(p.about ?? "").trim();
+          const alts = altCodesByCartKey.get(productKey(p)) || [];
+          const altsText = alts.length ? `بدائل: ${alts.join(" , ")}` : "";
+
+          pdf.setFontSize(fontBody);
+          const aboutLines = pdf.splitTextToSize(shapeArabicForPdf(about || "—"), cols.find((c) => c.key === "about").w - cellPadX * 2);
+          const altsLines = pdf.splitTextToSize(shapeArabicForPdf(altsText), cols.find((c) => c.key === "alts").w - cellPadX * 2);
+          const linesCount = Math.max(aboutLines.length, altsLines.length, 1);
+          const rowH = Math.max(8, pdfLineHeight(pdf, fontBody) * linesCount + 4);
+
+          y = ensureTableRoom(y, rowH + 2);
+          let cx = tableX;
+          pdf.setDrawColor(11, 43, 42);
+          pdf.setTextColor(...C.text);
+          for (const c of cols) {
+            pdf.rect(cx, y, c.w, rowH);
+            const topY = y + 5.8;
+            if (c.key === "no") {
+              writeLtr(String(i + 1), cx + c.w / 2, topY, c.w - 2, fontBody, C.text, "center");
+            } else if (c.key === "code1") {
+              writeLtr(String(p.code1 || ""), cx + cellPadX, topY, c.w - cellPadX * 2, fontBody, C.text, "left");
+            } else if (c.key === "code2") {
+              writeLtr(String(p.code2 || ""), cx + cellPadX, topY, c.w - cellPadX * 2, fontBody, C.muted, "left");
+            } else if (c.key === "about") {
+              pdf.setTextColor(...C.text);
+              pdf.text(aboutLines, cx + c.w - cellPadX, topY, { align: "right", lang: "ar" });
+            } else if (c.key === "qty") {
+              writeLtr(String(qty), cx + c.w / 2, topY, c.w - 2, fontBody, C.text, "center");
+            } else if (c.key === "unitAfter") {
+              writeLtr(`$${formatMoney(unitAfter)}`, cx + c.w - cellPadX, topY, c.w - 2, fontBody, C.text, "right");
+            } else if (c.key === "unitBefore") {
+              writeLtr(`$${formatMoney(unitBefore)}`, cx + c.w - cellPadX, topY, c.w - 2, fontBody, C.muted, "right");
+            } else if (c.key === "disc") {
+              writeLtr(`${discP}%`, cx + c.w / 2, topY, c.w - 2, fontBody, C.text, "center");
+            } else if (c.key === "lineAfter") {
+              writeLtr(`$${formatMoney(lineAfter)}`, cx + c.w - cellPadX, topY, c.w - 2, fontBody, C.primaryDark, "right");
+            } else if (c.key === "lineBefore") {
+              writeLtr(`$${formatMoney(lineBefore)}`, cx + c.w - cellPadX, topY, c.w - 2, fontBody, C.muted, "right");
+            } else if (c.key === "alts") {
+              pdf.setTextColor(...C.muted);
+              pdf.text(altsLines, cx + c.w - cellPadX, topY, { align: "right", lang: "ar" });
+            }
+            cx += c.w;
+          }
+          y += rowH + 2;
         }
+
+        y = ensureRoom(y, 44);
+        box(margin, y, maxWidth, 34);
+        let sy = y + 8;
+        sy = writeRtl(`الإجمالي قبل الخصم: $${formatMoney(beforeTotal)}`, xRight - 6, sy, maxWidth - 12, 12).y;
+        sy = writeRtl(`قيمة الخصم: $${formatMoney(discountValue)} (${formatMoney(discountPct)}%)`, xRight - 6, sy, maxWidth - 12, 12).y;
+        pdf.setTextColor(...C.danger);
+        pdf.setFontSize(14);
+        pdf.text(`الإجمالي بعد الخصم: $${formatMoney(afterTotal)}`, xRight - 6, sy + 2, { align: "right", lang: "ar" });
+        y += 34 + 8;
+
+        const notesInnerW = maxWidth - 12;
+        const measureLineCount = (text, size) => {
+          const t = String(text ?? "").trim();
+          if (!t) return 0;
+          pdf.setFontSize(size);
+          return pdf.splitTextToSize(t, notesInnerW).length;
+        };
+        const notesH =
+          8 +
+          6 +
+          measureLineCount("الملاحظات والاختيارات:", 12) * pdfLineHeight(pdf, 12) +
+          optionsLines.reduce((acc, l) => acc + measureLineCount(l, 10.5) * pdfLineHeight(pdf, 10.5), 0) +
+          (notes ? 2 + measureLineCount(`ملاحظات العميل: ${notes}`, 11) * pdfLineHeight(pdf, 11) : 0);
+
+        y = ensureRoom(y, notesH + 8);
+        box(margin, y, maxWidth, Math.max(28, notesH));
+        let ny = y + 8;
+        ny = writeRtl("الملاحظات والاختيارات:", xRight - 6, ny, notesInnerW, 12, C.text).y;
+        for (const l of optionsLines) ny = writeRtl(l, xRight - 6, ny, notesInnerW, 10.5, C.muted).y;
+        if (notes) ny = writeRtl(`ملاحظات العميل: ${notes}`, xRight - 6, ny + 1, notesInnerW, 11, C.danger).y;
+        y += Math.max(28, notesH) + 8;
+
+        if (enableAlt && altPreviewData.length > 0) {
+          y = ensureRoom(y, 10);
+          y = writeRtl("تفاصيل البدائل الاحتياطية:", xRight, y, maxWidth, 12, C.text).y + 2;
+          for (let gi = 0; gi < altPreviewData.length; gi++) {
+            const g = altPreviewData[gi];
+            const origLabel = g.originalProduct ? `${g.originalProduct.code1 || ""} ${g.originalProduct.code2 || ""}`.trim() : g.originalCode;
+            const qty = g.qty || 0;
+            y = ensureRoom(y, 16);
+            y = writeRtl(`مجموعة ${gi + 1} — الأصلي: ${origLabel || "—"} — العدد: ${qty || 0}`, xRight, y, maxWidth, 11, C.primaryDark).y;
+            if (g.originalProduct) {
+              y = writeRtl(`ABOUT: ${String(g.originalProduct.about || "—")}`, xRight, y, maxWidth, 10, C.text).y;
+              y = writeLtr(`$${formatMoney(Number(g.originalProduct.priceAfter) || 0)}`, xLeft, y - 0.5, maxWidth, 10, C.text, "left").y;
+            }
+            for (let ai = 0; ai < g.alts.length; ai++) {
+              const a = g.alts[ai];
+              const p = a.product;
+              const label = p ? `${p.code1 || ""} ${p.code2 || ""}`.trim() : String(a.code || "");
+              y = ensureRoom(y, 12);
+              y = writeRtl(`بديل ${ai + 1}: ${label || "—"} — العدد: ${qty || 0}`, xRight, y, maxWidth, 10.5, p ? C.text : C.danger).y;
+              if (p) {
+                y = writeRtl(`ABOUT: ${String(p.about || "—")}`, xRight, y, maxWidth, 9.8, C.muted).y;
+                y = writeLtr(`$${formatMoney(Number(p.priceAfter) || 0)}`, xLeft, y - 0.5, maxWidth, 9.8, C.text, "left").y;
+              }
+            }
+            y += 2;
+          }
+        }
+
+        pdf.setTextColor(...C.gray);
+        pdf.setFontSize(9);
+        pdf.text("BY HJY.co", pageWidth / 2, pageHeight - 6, { align: "center", lang: "en" });
 
         return pdf.output("blob");
       }
@@ -4010,6 +4411,11 @@
         updateFooterLinksVisibility();
         els.copyInvoiceBtn.style.display = "none";
         els.invoiceNote.style.display = "none";
+        if (els.downloadPdfBtn) els.downloadPdfBtn.style.display = "none";
+        try {
+          if (state.lastPdfUrl) URL.revokeObjectURL(state.lastPdfUrl);
+        } catch {}
+        state.lastPdfUrl = "";
         els.whatsappAfterOrder.style.display = "none";
         els.confirmOrderBtn.disabled = false;
         els.confirmOrderBtn.textContent = "إتمام الطلب";
@@ -4382,6 +4788,9 @@
           els.shipUsdInput,
           els.shipSypInput,
           els.allowVodafoneSwitchInput,
+          els.allowFamilySwitchInput,
+          els.fastShipEvenIfMissingInput,
+          els.enableAltSectionInput,
         ].filter(Boolean);
         const saveDraftDebounced = debounce(() => saveCustomerDraft(), 250);
         for (const el of draftInputs) {
@@ -4418,6 +4827,95 @@
         els.shipSypInput.addEventListener("change", () => syncCurrency("SYP"));
         syncCurrency("USD");
 
+        if (els.enableAltSectionInput) {
+          els.enableAltSectionInput.addEventListener("change", () => {
+            const on = Boolean(els.enableAltSectionInput.checked);
+            const groups = on ? readAltGroupsFromDom() : [];
+            setAltSectionEnabled(on, groups);
+            try {
+              saveCustomerDraft();
+            } catch {}
+          });
+        }
+        if (els.altAddGroupBtn) {
+          els.altAddGroupBtn.addEventListener("click", () => {
+            const current = readAltGroupsFromDom();
+            if (current.length >= 25) return showToast("تم الوصول للحد الأعلى", 1600);
+            current.push({ original: "", alts: ["", ""] });
+            renderAltGroups(current);
+            try {
+              saveCustomerDraft();
+            } catch {}
+          });
+        }
+        if (els.altRemoveGroupBtn) {
+          els.altRemoveGroupBtn.addEventListener("click", () => {
+            const current = readAltGroupsFromDom();
+            if (current.length <= 1) {
+              renderAltGroups([{ original: "", alts: ["", ""] }]);
+              if (els.altPreview) els.altPreview.innerHTML = "";
+              try {
+                saveCustomerDraft();
+              } catch {}
+              return;
+            }
+            current.pop();
+            renderAltGroups(current);
+            if (els.altPreview) els.altPreview.innerHTML = "";
+            try {
+              saveCustomerDraft();
+            } catch {}
+          });
+        }
+        if (els.altGroupsList) {
+          els.altGroupsList.addEventListener("click", (e) => {
+            const t = e.target;
+            if (!(t instanceof HTMLElement)) return;
+            const addBtn = t.closest("[data-alt-add]");
+            const remBtn = t.closest("[data-alt-remove]");
+            if (!addBtn && !remBtn) return;
+            const groupEl = t.closest("[data-alt-group]");
+            if (!(groupEl instanceof HTMLElement)) return;
+            const gi = Number(groupEl.getAttribute("data-alt-group"));
+            if (!Number.isFinite(gi) || gi < 0) return;
+            const current = readAltGroupsFromDom();
+            if (!current[gi]) return;
+            const g = current[gi];
+            const alts = Array.isArray(g.alts) ? g.alts.slice() : [];
+            if (addBtn) {
+              if (alts.length >= 5) return showToast("الحد الأعلى للبدائل 5", 1600);
+              alts.push("");
+              current[gi] = { ...g, alts };
+              renderAltGroups(current);
+              try {
+                saveCustomerDraft();
+              } catch {}
+              return;
+            }
+            if (remBtn) {
+              if (alts.length <= 1) return showToast("لا يمكن حذف آخر بديل", 1600);
+              alts.pop();
+              current[gi] = { ...g, alts };
+              renderAltGroups(current);
+              try {
+                saveCustomerDraft();
+              } catch {}
+              return;
+            }
+          });
+          els.altGroupsList.addEventListener("input", saveDraftDebounced);
+          els.altGroupsList.addEventListener("change", saveDraftDebounced);
+        }
+        if (els.altPreviewBtn) {
+          els.altPreviewBtn.addEventListener("click", () => {
+            const groups = readAltGroupsFromDom();
+            renderAltPreview(groups);
+            try {
+              saveCustomerDraft();
+            } catch {}
+          });
+        }
+
         els.checkoutForm.addEventListener("submit", async (e) => {
           e.preventDefault();
           if (state.cart.size === 0) return;
@@ -4437,6 +4935,10 @@
           const shipCurrency = els.shipSypInput.checked ? "سوري" : "دولار";
           const notes = String(els.orderNotesInput.value ?? "").trim();
           const allowSwitch = Boolean(els.allowVodafoneSwitchInput.checked);
+          const allowFamilySwitch = Boolean(els.allowFamilySwitchInput?.checked);
+          const fastShipEvenIfMissing = Boolean(els.fastShipEvenIfMissingInput?.checked);
+          const enableAlt = Boolean(els.enableAltSectionInput?.checked);
+          const altGroups = enableAlt ? readAltGroupsFromDom() : [];
           try {
             saveCustomerDraft();
           } catch {}
@@ -4453,11 +4955,30 @@
             shipCurrency,
             notes,
             allowSwitch,
+            allowFamilySwitch,
+            fastShipEvenIfMissing,
+            enableAlt,
+            altGroups,
           });
-          addOrderToHistory({ createdAt, name, gov, phone, shipType, shipCurrency, notes, allowSwitch, invoice });
+          addOrderToHistory({
+            createdAt,
+            name,
+            gov,
+            phone,
+            shipType,
+            shipCurrency,
+            notes,
+            allowSwitch,
+            allowFamilySwitch,
+            fastShipEvenIfMissing,
+            enableAlt,
+            altGroups,
+            invoice,
+          });
           state.lastInvoiceText = invoice;
           els.copyInvoiceBtn.style.display = "";
           els.invoiceNote.style.display = "";
+          if (els.downloadPdfBtn) els.downloadPdfBtn.style.display = "none";
           els.confirmOrderBtn.disabled = true;
           els.confirmOrderBtn.textContent = "جارٍ الإرسال...";
           setCheckoutStatus("جارٍ إرسال الطلب...", false);
@@ -4474,7 +4995,22 @@
               shipCurrency,
               notes,
               allowSwitch,
+              allowFamilySwitch,
+              fastShipEvenIfMissing,
+              enableAlt,
+              altGroups,
             });
+            try {
+              if (state.lastPdfUrl) URL.revokeObjectURL(state.lastPdfUrl);
+            } catch {}
+            try {
+              state.lastPdfUrl = URL.createObjectURL(pdfBlob);
+              if (els.downloadPdfBtn) {
+                els.downloadPdfBtn.href = state.lastPdfUrl;
+                els.downloadPdfBtn.download = `${sanitizeFilename(name)}.pdf`;
+                els.downloadPdfBtn.style.display = "";
+              }
+            } catch {}
             await sendPdfToTelegram(pdfBlob, `${sanitizeFilename(name)}.pdf`);
             els.confirmOrderBtn.textContent = "تم إرسال الطلب";
             setCheckoutStatus("طلبك وصل إلينا. سوف يتم التواصل معك على واتساب قريباً.", false);
