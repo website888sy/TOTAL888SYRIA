@@ -862,12 +862,18 @@
       }
 
       .field-clear {
-        width: 44px;
+        width: auto;
         min-width: 44px;
+        max-width: 150px;
+        padding: 0 10px;
         border-radius: 12px;
         border: 1px solid var(--border);
         background: rgba(255, 255, 255, 0.9);
         font-weight: 900;
+        font-size: 11px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
         color: var(--muted);
         cursor: pointer;
       }
@@ -1712,7 +1718,7 @@
                 <span style="font-weight:800">اسم ثلاثي</span>
                 <div class="field-row">
                   <input id="fullNameInput" type="text" autocomplete="name" required style="padding:12px;border:1px solid var(--border);border-radius:12px" />
-                  <button class="field-clear" type="button" data-clear="fullNameInput" aria-label="حذف">×</button>
+                  <button class="field-clear" type="button" data-clear="fullNameInput" aria-label="حذف محتوى الحقل" title="حذف محتوى الحقل">حذف محتوى الحقل</button>
                 </div>
               </label>
               <label style="display:grid;gap:6px">
@@ -1726,7 +1732,7 @@
                     placeholder="اكتب المحافظة"
                     style="padding:12px;border:1px solid var(--border);border-radius:12px"
                   />
-                  <button class="field-clear" type="button" data-clear="govInput" aria-label="حذف">×</button>
+                  <button class="field-clear" type="button" data-clear="govInput" aria-label="حذف محتوى الحقل" title="حذف محتوى الحقل">حذف محتوى الحقل</button>
                 </div>
               </label>
               <label style="display:grid;gap:6px">
@@ -1740,7 +1746,7 @@
                     required
                     style="padding:12px;border:1px solid var(--border);border-radius:12px;direction:ltr;unicode-bidi:plaintext"
                   />
-                  <button class="field-clear" type="button" data-clear="phoneInput" aria-label="حذف">×</button>
+                  <button class="field-clear" type="button" data-clear="phoneInput" aria-label="حذف محتوى الحقل" title="حذف محتوى الحقل">حذف محتوى الحقل</button>
                 </div>
               </label>
               <div class="checkout-choices">
@@ -1760,7 +1766,7 @@
                     <span style="font-weight:800">عنوان ضمن حمص</span>
                     <div class="field-row">
                       <input id="homsAddressInput" type="text" autocomplete="street-address" style="padding:12px;border:1px solid var(--border);border-radius:12px" />
-                      <button class="field-clear" type="button" data-clear="homsAddressInput" aria-label="حذف">×</button>
+                      <button class="field-clear" type="button" data-clear="homsAddressInput" aria-label="حذف محتوى الحقل" title="حذف محتوى الحقل">حذف محتوى الحقل</button>
                     </div>
                   </label>
                 </div>
@@ -1771,7 +1777,7 @@
                     <span style="font-weight:800">عنوان مركز الشحن</span>
                     <div class="field-row">
                       <input id="shipCenterInput" type="text" autocomplete="street-address" style="padding:12px;border:1px solid var(--border);border-radius:12px" />
-                      <button class="field-clear" type="button" data-clear="shipCenterInput" aria-label="حذف">×</button>
+                      <button class="field-clear" type="button" data-clear="shipCenterInput" aria-label="حذف محتوى الحقل" title="حذف محتوى الحقل">حذف محتوى الحقل</button>
                     </div>
                   </label>
                   <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -1792,7 +1798,7 @@
                     placeholder="اكتب أي ملاحظة تخص الطلب..."
                     style="padding:12px;border:1px solid var(--border);border-radius:12px;font-family:inherit;font-size:13px;min-height:110px;resize:vertical"
                   ></textarea>
-                  <button class="field-clear" type="button" data-clear="orderNotesInput" aria-label="حذف">×</button>
+                  <button class="field-clear" type="button" data-clear="orderNotesInput" aria-label="حذف محتوى الحقل" title="حذف محتوى الحقل">حذف محتوى الحقل</button>
                 </div>
               </label>
               <div style="display:grid;gap:8px">
@@ -2969,21 +2975,27 @@
               </div>
               <label style="display:grid;gap:6px">
                 <span style="font-weight:800">الكود الاصلي بالفاتورة</span>
-                <input
-                  data-alt-original="1"
-                  type="text"
-                  inputmode="text"
-                  list="cartCodesDatalist"
-                  value="${escapeHtmlAttr(g.original)}"
-                  placeholder="${codes.length ? "اختر من السلة أو اكتب الكود" : "اكتب الكود"}"
-                  style="padding:12px;border:1px solid var(--border);border-radius:12px;direction:ltr;unicode-bidi:plaintext"
-                />
+                <div class="field-row">
+                  <input
+                    data-alt-original="1"
+                    type="text"
+                    inputmode="text"
+                    list="cartCodesDatalist"
+                    value="${escapeHtmlAttr(g.original)}"
+                    placeholder="${codes.length ? "اختر من السلة أو اكتب الكود" : "اكتب الكود"}"
+                    style="padding:12px;border:1px solid var(--border);border-radius:12px;direction:ltr;unicode-bidi:plaintext"
+                  />
+                  <button class="field-clear" type="button" data-clear-nearest="1" aria-label="حذف محتوى الحقل" title="حذف محتوى الحقل">حذف محتوى الحقل</button>
+                </div>
               </label>
               <div style="display:grid;gap:10px" data-alt-list="1">`;
           for (let ai = 0; ai < alts.length; ai++) {
             html += `<label style="display:grid;gap:6px">
                   <span style="font-weight:800">الكود الاحتياطي ${ai + 1}</span>
-                  <input data-alt-code="1" type="text" value="${escapeHtmlAttr(alts[ai] || "")}" style="padding:12px;border:1px solid var(--border);border-radius:12px;direction:ltr;unicode-bidi:plaintext" />
+                  <div class="field-row">
+                    <input data-alt-code="1" type="text" value="${escapeHtmlAttr(alts[ai] || "")}" style="padding:12px;border:1px solid var(--border);border-radius:12px;direction:ltr;unicode-bidi:plaintext" />
+                    <button class="field-clear" type="button" data-clear-nearest="1" aria-label="حذف محتوى الحقل" title="حذف محتوى الحقل">حذف محتوى الحقل</button>
+                  </div>
                 </label>`;
           }
           html += `</div></div>`;
@@ -4030,33 +4042,40 @@
         const fastShipEvenIfMissing = Boolean(details.fastShipEvenIfMissing);
         const enableAlt = Boolean(details.enableAlt);
         const altGroups = Array.isArray(details.altGroups) ? details.altGroups : [];
-        const createdAt = Number(details.createdAt) || Date.now();
         const lines = [];
-        lines.push("بيانات العميل هنا :");
-        lines.push(`تاريخ الطلب: ${formatOrderDate(createdAt)}`);
+        lines.push("بيانات الزبون:");
         lines.push(`الاسم الثلاثي: ${name || "—"}`);
+        lines.push("");
         lines.push(`المحافظة: ${gov || "—"}`);
+        lines.push("");
         lines.push(`رقم الهاتف: ${phone || "—"}`);
+        lines.push("");
         if (shipType === "HOMS") {
           lines.push("طريقة الاستلام: استلام ضمن حمص");
+          lines.push("");
           lines.push(`العنوان: ${homsAddress || "—"}`);
+          lines.push("");
         } else {
           lines.push("طريقة الاستلام: شحن للمحافظات");
+          lines.push("");
           lines.push(`عنوان مركز الشحن: ${shipCenter || "—"}`);
+          lines.push("");
         }
-        if (shipCurrency) lines.push(`عملة الدفع: ${shipCurrency}`);
-        if (notes) lines.push(`ملاحظات: ${notes}`);
+        if (shipCurrency) {
+          lines.push(`عملة الدفع: ${shipCurrency}`);
+          lines.push("");
+        }
+        if (notes) {
+          lines.push(`ملاحظات: ${notes}`);
+          lines.push("");
+        }
 
-        lines.push("");
-        lines.push("شروط ال اختيار من متعدد هنا:");
         lines.push(`بديل توتال إلى وادفو عند عدم توفره: ${allowSwitch ? "نعم" : "لا"}`);
         lines.push(`تبديل قريب جداً بنفس العائلة عند عدم توفر المنتج: ${allowFamilySwitch ? "نعم" : "لا"}`);
         lines.push(`إرسال الطلب بأسرع ما يمكن ولو كان يوجد بعض النقص: ${fastShipEvenIfMissing ? "نعم" : "لا"}`);
-        lines.push(`تفعيل البدائل الاحتياطية: ${enableAlt ? "نعم" : "لا"}`);
-
         lines.push("");
-        lines.push("إجمالي الفاتورة سعرها نهائي هنا:");
-        lines.push(`$${formatMoney(cartTotals())}`);
+
+        lines.push(`الإجمالي: $${formatMoney(cartTotals())}`);
 
         const normalizedAltGroups = enableAlt ? normalizeAltGroups(altGroups) : [];
         const altPreviewData = enableAlt ? buildAltPreviewData(normalizedAltGroups) : [];
@@ -4074,24 +4093,30 @@
         }
 
         lines.push("");
-        lines.push("المواد هنا :");
+        lines.push("المواد المطلوبة:");
         let idx = 1;
         for (const it of state.cart.values()) {
           const p = it.product;
           const qty = Math.max(1, Number(it.qty) || 1);
           const about = String(p.about ?? "").trim();
-          lines.push(`${idx}- ${about || "—"}`);
+          lines.push(`${idx}-`);
+          lines.push(String(p.code1 || "—"));
+          lines.push(about || "—");
+          lines.push(`$${formatMoney(Number(p.priceAfter) || 0)}`);
+          if (qty !== 1) lines.push(`الكمية: ${qty}`);
 
           if (enableAlt) {
             const abouts = altAboutByCartKey.get(productKey(p)) || [];
             if (abouts.length > 0) {
-              lines.push("بديل احتياطي :");
-              for (const a of abouts) lines.push(`- ${a}`);
+              lines.push("بديل:");
+              for (let ai = 0; ai < abouts.length; ai++) {
+                lines.push(abouts[ai]);
+                if (ai !== abouts.length - 1) lines.push("");
+              }
             }
           }
 
-          lines.push(`سعر مباشرة بعد الخصم: $${formatMoney(Number(p.priceAfter) || 0)}`);
-          if (qty !== 1) lines.push(`الكمية: ${qty}`);
+          lines.push("");
           lines.push("");
           idx++;
         }
@@ -5050,15 +5075,29 @@
           const t = e.target;
           if (!(t instanceof HTMLElement)) return;
           const btn = t.closest("[data-clear]");
-          if (!(btn instanceof HTMLElement)) return;
-          const id = String(btn.getAttribute("data-clear") ?? "").trim();
-          if (!id) return;
-          const el = document.getElementById(id);
-          if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
-            el.value = "";
-            el.focus();
-            el.dispatchEvent(new Event("input", { bubbles: true }));
-            el.dispatchEvent(new Event("change", { bubbles: true }));
+          const nearestBtn = t.closest("[data-clear-nearest]");
+          if (btn instanceof HTMLElement) {
+            const id = String(btn.getAttribute("data-clear") ?? "").trim();
+            if (!id) return;
+            const el = document.getElementById(id);
+            if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+              el.value = "";
+              el.focus();
+              el.dispatchEvent(new Event("input", { bubbles: true }));
+              el.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+            return;
+          }
+          if (nearestBtn instanceof HTMLElement) {
+            const label = nearestBtn.closest("label");
+            const scope = label instanceof HTMLElement ? label : nearestBtn.parentElement;
+            const input = scope?.querySelector?.("input,textarea");
+            if (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement) {
+              input.value = "";
+              input.focus();
+              input.dispatchEvent(new Event("input", { bubbles: true }));
+              input.dispatchEvent(new Event("change", { bubbles: true }));
+            }
           }
         });
 
