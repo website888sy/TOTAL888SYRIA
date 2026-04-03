@@ -4032,60 +4032,69 @@
         const altGroups = Array.isArray(details.altGroups) ? details.altGroups : [];
         const createdAt = Number(details.createdAt) || Date.now();
         const lines = [];
-        lines.push("طلب جديد");
+        lines.push("بيانات العميل هنا :");
         lines.push(`تاريخ الطلب: ${formatOrderDate(createdAt)}`);
-        lines.push(`الاسم الثلاثي: ${name}`);
-        lines.push(`المحافظة: ${gov}`);
-        lines.push(`رقم الهاتف: ${phone}`);
-        if (shipCurrency) lines.push(`شحن العملة: ${shipCurrency}`);
+        lines.push(`الاسم الثلاثي: ${name || "—"}`);
+        lines.push(`المحافظة: ${gov || "—"}`);
+        lines.push(`رقم الهاتف: ${phone || "—"}`);
         if (shipType === "HOMS") {
           lines.push("طريقة الاستلام: استلام ضمن حمص");
-          if (homsAddress) lines.push(`عنوان ضمن حمص: ${homsAddress}`);
-        } else if (shipType === "GOV") {
+          lines.push(`العنوان: ${homsAddress || "—"}`);
+        } else {
           lines.push("طريقة الاستلام: شحن للمحافظات");
-          if (shipCenter) lines.push(`عنوان مركز الشحن: ${shipCenter}`);
+          lines.push(`عنوان مركز الشحن: ${shipCenter || "—"}`);
         }
-        if (notes) lines.push(`ملاحظات الطلب: ${notes}`);
+        if (shipCurrency) lines.push(`عملة الدفع: ${shipCurrency}`);
+        if (notes) lines.push(`ملاحظات: ${notes}`);
+
+        lines.push("");
+        lines.push("شروط ال اختيار من متعدد هنا:");
         lines.push(`بديل توتال إلى وادفو عند عدم توفره: ${allowSwitch ? "نعم" : "لا"}`);
-        lines.push(
-          `تبديل قريب جداً بنفس العائلة عند عدم توفر المنتج: ${allowFamilySwitch ? "نعم" : "لا"}`
-        );
-        lines.push(
-          `إرسال الطلب بأسرع ما يمكن ولو كان يوجد بعض النقص: ${fastShipEvenIfMissing ? "نعم" : "لا"}`
-        );
+        lines.push(`تبديل قريب جداً بنفس العائلة عند عدم توفر المنتج: ${allowFamilySwitch ? "نعم" : "لا"}`);
+        lines.push(`إرسال الطلب بأسرع ما يمكن ولو كان يوجد بعض النقص: ${fastShipEvenIfMissing ? "نعم" : "لا"}`);
         lines.push(`تفعيل البدائل الاحتياطية: ${enableAlt ? "نعم" : "لا"}`);
+
+        lines.push("");
+        lines.push("إجمالي الفاتورة سعرها نهائي هنا:");
+        lines.push(`$${formatMoney(cartTotals())}`);
+
+        const normalizedAltGroups = enableAlt ? normalizeAltGroups(altGroups) : [];
+        const altPreviewData = enableAlt ? buildAltPreviewData(normalizedAltGroups) : [];
+        const altAboutByCartKey = new Map();
         if (enableAlt) {
-          const groups = normalizeAltGroups(altGroups);
-          for (let i = 0; i < groups.length; i++) {
-            const g = groups[i];
-            const original = String(g.original ?? "").trim();
-            const alts = Array.isArray(g.alts) ? g.alts : [];
-            if (!original && alts.every((x) => !String(x ?? "").trim())) continue;
-            lines.push(`مجموعة بدائل ${i + 1}:`);
-            if (original) lines.push(`  الأصلي: ${original}`);
-            for (let ai = 0; ai < alts.length; ai++) {
-              const c = String(alts[ai] ?? "").trim();
-              if (c) lines.push(`  بديل ${ai + 1}: ${c}`);
-            }
+          for (const g of altPreviewData) {
+            const cartItem = g.originalCode ? findCartItemByAnyCode(g.originalCode) : null;
+            const k = cartItem ? productKey(cartItem.product) : "";
+            if (!k) continue;
+            const abouts = (Array.isArray(g.alts) ? g.alts : [])
+              .map((a) => String(a?.product?.about || "").trim())
+              .filter(Boolean);
+            if (abouts.length > 0) altAboutByCartKey.set(k, abouts);
           }
         }
+
         lines.push("");
-        lines.push("تفاصيل الطلب:");
+        lines.push("المواد هنا :");
+        let idx = 1;
         for (const it of state.cart.values()) {
-          const discountPct = Math.round((Number(it.product.discountPercent) || 0) * 100);
-          lines.push(`- CODE1: ${it.product.code1}`);
-          lines.push(`  CODE2: ${it.product.code2}`);
-          lines.push(`  ${it.product.about}`);
-          lines.push(`  الكمية: ${it.qty}`);
-          lines.push(`  السعر قبل الخصم: $${formatMoney(it.product.priceBefore)}`);
-          lines.push(`  نسبة الخصم: ${discountPct}%`);
-          lines.push(`  السعر بعد الخصم: $${formatMoney(it.product.priceAfter)}`);
-          lines.push(`  المجموع قبل الخصم: $${formatMoney(it.qty * it.product.priceBefore)}`);
-          lines.push(`  المجموع بعد الخصم: $${formatMoney(it.qty * it.product.priceAfter)}`);
+          const p = it.product;
+          const qty = Math.max(1, Number(it.qty) || 1);
+          const about = String(p.about ?? "").trim();
+          lines.push(`${idx}- ${about || "—"}`);
+
+          if (enableAlt) {
+            const abouts = altAboutByCartKey.get(productKey(p)) || [];
+            if (abouts.length > 0) {
+              lines.push("بديل احتياطي :");
+              for (const a of abouts) lines.push(`- ${a}`);
+            }
+          }
+
+          lines.push(`سعر مباشرة بعد الخصم: $${formatMoney(Number(p.priceAfter) || 0)}`);
+          if (qty !== 1) lines.push(`الكمية: ${qty}`);
           lines.push("");
+          idx++;
         }
-        lines.push(`الإجمالي قبل الخصم: $${formatMoney(cartTotalsBefore())}`);
-        lines.push(`الإجمالي بعد الخصم: $${formatMoney(cartTotals())}`);
         return lines.join("\n").trim();
       }
 
@@ -5239,41 +5248,14 @@
           setCheckoutStatus("جارٍ إرسال الطلب...", false);
           let sentOk = false;
           try {
-            const pdfBlob = await buildOrderPdfBlob({
-              createdAt,
-              name,
-              gov,
-              phone,
-              shipType,
-              homsAddress,
-              shipCenter,
-              shipCurrency,
-              notes,
-              allowSwitch,
-              allowFamilySwitch,
-              fastShipEvenIfMissing,
-              enableAlt,
-              altGroups,
-            });
-            try {
-              if (state.lastPdfUrl) URL.revokeObjectURL(state.lastPdfUrl);
-            } catch {}
-            try {
-              state.lastPdfUrl = URL.createObjectURL(pdfBlob);
-              if (els.downloadPdfBtn) {
-                els.downloadPdfBtn.href = state.lastPdfUrl;
-                els.downloadPdfBtn.download = `${sanitizeFilename(name)}.pdf`;
-                els.downloadPdfBtn.style.display = "";
-              }
-            } catch {}
-            await sendPdfToTelegram(pdfBlob, `${sanitizeFilename(name)}.pdf`);
+            await sendToTelegram(invoice);
             els.confirmOrderBtn.textContent = "تم إرسال الطلب";
             setCheckoutStatus("طلبك وصل إلينا. سوف يتم التواصل معك على واتساب قريباً.", false);
             sentOk = true;
           } catch {
             els.confirmOrderBtn.disabled = false;
-            els.confirmOrderBtn.textContent = "إعادة إرسال PDF";
-            setCheckoutStatus("تعذر إنشاء/إرسال ملف PDF. تأكد من اتصال الإنترنت ثم حاول مجدداً.", true);
+            els.confirmOrderBtn.textContent = "إعادة إرسال الطلب";
+            setCheckoutStatus("تعذر إرسال الطلب. تأكد من اتصال الإنترنت ثم حاول مجدداً.", true);
           }
           await copyText(invoice);
           els.whatsappAfterOrder.style.display = "";
