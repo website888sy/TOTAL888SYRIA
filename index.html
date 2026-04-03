@@ -4301,6 +4301,11 @@
         };
       }
 
+      async function downloadInvoicePdf(details) {
+        const blob = await buildOrderPdfBlob(details);
+        downloadBlob("invoice.pdf", blob);
+      }
+
       function splitText(text, maxLen) {
         const t = String(text ?? "");
         if (t.length <= maxLen) return [t];
@@ -4413,6 +4418,7 @@
         const C = {
           primary: [10, 163, 163],
           primaryDark: [10, 116, 116],
+          noteBlue: [0, 51, 102],
           text: [11, 43, 42],
           muted: [75, 107, 105],
           danger: [198, 40, 40],
@@ -4478,14 +4484,12 @@
         const drawTopHeader = (y) => {
           pdf.setTextColor(...C.muted);
           pdf.setFontSize(11);
-          const dateText = toArabicPdfText(`تاريخ ووقت الإصدار: ${formatOrderDate(createdAt)}`);
-          const invoiceText = toArabicPdfText("فاتورة");
+          const dateText = toArabicPdfText(`تاريخ الطلب والوقت: ${formatOrderDate(createdAt)}`);
           pdfTextRtl(dateText, xRight, y, { align: "right" });
-          pdfTextRtl(invoiceText, xLeft, y, { align: "left" });
           y += 6;
           pdf.setTextColor(...C.primaryDark);
           pdf.setFontSize(24);
-          writeLtr("TOTAL SYRIA TOOLS", pageWidth / 2, y, maxWidth, 24, C.primaryDark, "center");
+          writeLtr("TOTAL TOOLS SYRIA", pageWidth / 2, y, maxWidth, 24, C.primaryDark, "center");
           y += 6;
           pdf.setTextColor(...C.muted);
           pdf.setFontSize(12);
@@ -4528,10 +4532,9 @@
         const items = Array.from(state.cart.values());
 
         const optionsLines = [
-          `بديل توتال إلى وادفو عند عدم توفره: ${allowSwitch ? "نعم" : "لا"}`,
-          `تبديل قريب جداً بنفس العائلة عند عدم توفر المنتج: ${allowFamilySwitch ? "نعم" : "لا"}`,
+          `بدل توتال بـ واد فو عند عدم توفره: ${allowSwitch ? "نعم" : "لا"}`,
+          `وضع بديل قريب جداً بنفس العائلة عند عدم توفر المنتج: ${allowFamilySwitch ? "نعم" : "لا"}`,
           `إرسال الطلب بأسرع ما يمكن ولو كان يوجد بعض النقص: ${fastShipEvenIfMissing ? "نعم" : "لا"}`,
-          `تفعيل البدائل الاحتياطية: ${enableAlt ? "نعم" : "لا"}`,
         ];
 
         const normalizedAltGroups = enableAlt ? normalizeAltGroups(altGroups) : [];
@@ -4549,8 +4552,7 @@
             const k = cartItem ? productKey(cartItem.product) : "";
             if (!k) continue;
             const codes = g.alts
-              .map((x) => formatCodeLabel(x?.product, x?.code))
-              .map((s) => String(s || "").trim())
+              .map((x) => String(x?.product?.code2 || "").trim())
               .filter(Boolean);
             if (codes.length > 0) altCodesByCartKey.set(k, codes);
           }
@@ -4567,7 +4569,7 @@
           { key: "disc", title: "DISC%", w: 12, align: "center", dir: "ltr" },
           { key: "lineAfter", title: "T AFTER", w: 20, align: "right", dir: "ltr" },
           { key: "lineBefore", title: "T BEFORE", w: 20, align: "right", dir: "ltr" },
-          { key: "alts", title: "ALTS", w: maxWidth - (8 + 24 + 20 + 104 + 12 + 18 + 18 + 12 + 20 + 20), align: "right", dir: "rtl" },
+          { key: "alts", title: "ALTS (CODE2)", w: maxWidth - (8 + 24 + 20 + 104 + 12 + 18 + 18 + 12 + 20 + 20), align: "right", dir: "rtl" },
         ];
 
         const tableX = margin;
@@ -4628,7 +4630,7 @@
           const lineAfter = qty * unitAfter;
           const about = String(p.about ?? "").trim();
           const alts = altCodesByCartKey.get(productKey(p)) || [];
-          const altsText = alts.length ? `بدائل:\n${alts.join("\n")}` : "";
+          const altsText = alts.length ? alts.join("\n") : "";
 
           pdf.setFontSize(fontBody);
           const aboutLines = pdf.splitTextToSize(toArabicPdfText(about || "—"), cols.find((c) => c.key === "about").w - cellPadX * 2);
@@ -4673,15 +4675,8 @@
           y += rowH + 2;
         }
 
-        y = ensureRoom(y, 44);
-        box(margin, y, maxWidth, 34);
-        let sy = y + 8;
-        sy = writeRtl(`الإجمالي قبل الخصم: $${formatMoney(beforeTotal)}`, xRight - 4, sy, maxWidth - 8, 13).y;
-        sy = writeRtl(`قيمة الخصم: $${formatMoney(discountValue)} (${formatMoney(discountPct)}%)`, xRight - 4, sy, maxWidth - 8, 13).y;
-        pdf.setTextColor(...C.danger);
-        pdf.setFontSize(16);
-        pdfTextRtl(toArabicPdfText(`الإجمالي بعد الخصم: $${formatMoney(afterTotal)}`), xRight - 4, sy + 2, { align: "right" });
-        y += 34 + 8;
+        y = ensureRoom(y, 14);
+        y = writeRtl(`نسبة الخصم: ${formatMoney(discountPct)}%`, xRight, y, maxWidth, 12, C.muted).y + 4;
 
         const notesInnerW = maxWidth - 8;
         const measureLineCount = (text, size) => {
@@ -4690,20 +4685,53 @@
           pdf.setFontSize(size);
           return pdf.splitTextToSize(t, notesInnerW).length;
         };
+        const optLineH = pdfLineHeight(pdf, 11.5);
+        const optsH =
+          optionsLines.reduce((acc, l, idx) => {
+            const h = measureLineCount(l, 11.5) * optLineH;
+            const gap = idx < optionsLines.length - 1 ? 1 : 0;
+            return acc + h + gap;
+          }, 0) +
+          (shipCurrency === "سوري"
+            ? 1 + measureLineCount("ملاحظة: شحن بالسوري سيتم تطبيق زيادة + 1.5 ل.س جديدة لسعر صرف لحظة الإرسال بسبب تذبذب الصرف", 11.5) * optLineH
+            : 0);
         const notesH =
           8 +
           6 +
           measureLineCount("الملاحظات والاختيارات:", 13) * pdfLineHeight(pdf, 13) +
-          optionsLines.reduce((acc, l) => acc + measureLineCount(l, 11.5) * pdfLineHeight(pdf, 11.5), 0) +
+          optsH +
           (notes ? 2 + measureLineCount(`ملاحظات العميل: ${notes}`, 12.5) * pdfLineHeight(pdf, 12.5) : 0);
 
         y = ensureRoom(y, notesH + 8);
         box(margin, y, maxWidth, Math.max(28, notesH));
         let ny = y + 8;
-        ny = writeRtl("الملاحظات والاختيارات:", xRight - 4, ny, notesInnerW, 13, C.text).y;
-        for (const l of optionsLines) ny = writeRtl(l, xRight - 4, ny, notesInnerW, 11.5, C.muted).y;
-        if (notes) ny = writeRtl(`ملاحظات العميل: ${notes}`, xRight - 4, ny + 1, notesInnerW, 12.5, C.danger).y;
+        ny = writeRtl("الملاحظات والاختيارات:", xRight - 4, ny, notesInnerW, 13, C.noteBlue).y;
+        for (const l of optionsLines) {
+          const next = writeRtl(l, xRight - 4, ny, notesInnerW, 11.5, C.muted).y;
+          ny = next + 1;
+        }
+        if (shipCurrency === "سوري") {
+          ny = writeRtl(
+            "ملاحظة: شحن بالسوري سيتم تطبيق زيادة + 1.5 ل.س جديدة لسعر صرف لحظة الإرسال بسبب تذبذب الصرف",
+            xRight - 4,
+            ny + 1,
+            notesInnerW,
+            11.5,
+            C.noteBlue
+          ).y;
+        }
+        if (notes) ny = writeRtl(`ملاحظات العميل: ${notes}`, xRight - 4, ny + 1, notesInnerW, 12.5, C.noteBlue).y;
         y += Math.max(28, notesH) + 8;
+
+        y = ensureRoom(y, 48);
+        box(margin, y, maxWidth, 38);
+        let sy = y + 10;
+        sy = writeRtl(`الإجمالي قبل الخصم: $${formatMoney(beforeTotal)}`, xRight - 4, sy, maxWidth - 8, 13, C.text).y;
+        sy = writeRtl(`قيمة الخصم: $${formatMoney(discountValue)} (${formatMoney(discountPct)}%)`, xRight - 4, sy, maxWidth - 8, 13, C.muted).y;
+        pdf.setTextColor(...C.danger);
+        pdf.setFontSize(18);
+        pdfTextRtl(toArabicPdfText(`الإجمالي بعد الخصم: $${formatMoney(afterTotal)}`), xRight - 4, sy + 3, { align: "right" });
+        y += 38 + 8;
 
         if (enableAlt && altPreviewData.length > 0) {
           y = ensureRoom(y, 16);
@@ -4711,9 +4739,12 @@
 
           const altCols = [
             { key: "g", title: "#", w: 10, dir: "ltr", align: "center" },
-            { key: "orig", title: "الأصلي", w: 78, dir: "rtl", align: "right" },
-            { key: "qty", title: "العدد", w: 14, dir: "ltr", align: "center" },
-            { key: "alts", title: "البدائل", w: maxWidth - (10 + 78 + 14), dir: "rtl", align: "right" },
+            { key: "orig", title: "الأصلي", w: 56, dir: "rtl", align: "right" },
+            { key: "qty", title: "QTY", w: 14, dir: "ltr", align: "center" },
+            { key: "ac1", title: "CODE1", w: 22, dir: "ltr", align: "left" },
+            { key: "ac2", title: "CODE2", w: 20, dir: "ltr", align: "left" },
+            { key: "aabout", title: "ABOUT", w: maxWidth - (10 + 56 + 14 + 22 + 20 + 18), dir: "rtl", align: "right" },
+            { key: "aprice", title: "PRICE", w: 18, dir: "ltr", align: "right" },
           ];
 
           const drawAltHeader = (yy) => {
@@ -4741,46 +4772,52 @@
           for (let gi = 0; gi < altPreviewData.length; gi++) {
             const g = altPreviewData[gi];
             const qty = g.qty || 0;
-            const origCode = formatCodeLabel(g.originalProduct, g.originalCode);
+            const origCode1 = g.originalProduct ? String(g.originalProduct.code1 || "").trim() : "";
+            const origCode2 = g.originalProduct ? String(g.originalProduct.code2 || "").trim() : "";
             const origAbout = g.originalProduct ? String(g.originalProduct.about || "").trim() : "";
-            const origText = `${origCode || "—"}${origAbout ? `\n${origAbout}` : ""}`;
-            const altCodes = g.alts
-              .map((a, idx) => {
-                const p = a?.product;
-                const code = formatCodeLabel(p, a?.code);
-                const about = p ? String(p.about || "").trim() : "";
-                const line = code ? `بديل ${idx + 1}: ${code}` : `بديل ${idx + 1}: —`;
-                return about ? `${line}\n${about}` : line;
-              })
-              .filter(Boolean);
-            const altsText = altCodes.length ? altCodes.join("\n\n") : "لا توجد بدائل.";
+            const origText = `${origCode1}${origCode2 ? ` ${origCode2}` : ""}${origAbout ? `\n${origAbout}` : ""}` || "—";
+            const rows = Array.isArray(g.alts) && g.alts.length > 0 ? g.alts : [{ code: "", product: null }];
+            for (let ri = 0; ri < rows.length; ri++) {
+              const a = rows[ri];
+              const ap = a?.product;
+              const ac1 = ap ? String(ap.code1 || "").trim() : "";
+              const ac2 = ap ? String(ap.code2 || "").trim() : "";
+              const aabout = ap ? String(ap.about || "").trim() : "";
+              const aprice = ap ? Number(ap.priceAfter) || 0 : 0;
 
-            pdf.setFontSize(altFont);
-            const origLines = pdf.splitTextToSize(toArabicPdfText(origText), altCols.find((c) => c.key === "orig").w - cellPadX * 2);
-            const altsLines = pdf.splitTextToSize(toArabicPdfText(altsText), altCols.find((c) => c.key === "alts").w - cellPadX * 2);
-            const linesCount = Math.max(origLines.length, altsLines.length, 1);
-            const rowH = Math.max(10, pdfLineHeight(pdf, altFont) * linesCount + 4);
+              pdf.setFontSize(altFont);
+              const origLines = pdf.splitTextToSize(toArabicPdfText(origText), altCols.find((c) => c.key === "orig").w - cellPadX * 2);
+              const aboutLines = pdf.splitTextToSize(toArabicPdfText(aabout || (ap ? "—" : "لا توجد بدائل")), altCols.find((c) => c.key === "aabout").w - cellPadX * 2);
+              const linesCount = Math.max(origLines.length, aboutLines.length, 1);
+              const rowH = Math.max(10, pdfLineHeight(pdf, altFont) * linesCount + 4);
 
-            y = ensureTableRoom(y, rowH + 2);
-            let cx = tableX;
-            pdf.setDrawColor(11, 43, 42);
-            pdf.setTextColor(...C.text);
-            for (const c of altCols) {
-              pdf.rect(cx, y, c.w, rowH);
-              const topY = y + 5.8;
-              if (c.key === "g") {
-                writeLtr(String(gi + 1), cx + c.w / 2, topY, c.w - 2, altFont, C.text, "center");
-              } else if (c.key === "orig") {
-                pdfTextRtl(origLines, cx + c.w - cellPadX, topY, { align: "right" });
-              } else if (c.key === "qty") {
-                writeLtr(String(qty || 0), cx + c.w / 2, topY, c.w - 2, altFont, C.text, "center");
-              } else if (c.key === "alts") {
-                pdf.setTextColor(...C.muted);
-                pdfTextRtl(altsLines, cx + c.w - cellPadX, topY, { align: "right" });
+              y = ensureTableRoom(y, rowH + 2);
+              let cx = tableX;
+              pdf.setDrawColor(11, 43, 42);
+              pdf.setTextColor(...C.text);
+              for (const c of altCols) {
+                pdf.rect(cx, y, c.w, rowH);
+                const topY = y + 5.8;
+                if (c.key === "g") {
+                  writeLtr(ri === 0 ? String(gi + 1) : "", cx + c.w / 2, topY, c.w - 2, altFont, C.text, "center");
+                } else if (c.key === "orig") {
+                  if (ri === 0) pdfTextRtl(origLines, cx + c.w - cellPadX, topY, { align: "right" });
+                } else if (c.key === "qty") {
+                  writeLtr(ri === 0 ? String(qty || 0) : "", cx + c.w / 2, topY, c.w - 2, altFont, C.text, "center");
+                } else if (c.key === "ac1") {
+                  writeLtr(ac1 || (ap ? "—" : ""), cx + cellPadX, topY, c.w - cellPadX * 2, altFont, C.text, "left");
+                } else if (c.key === "ac2") {
+                  writeLtr(ac2 || (ap ? "—" : ""), cx + cellPadX, topY, c.w - cellPadX * 2, altFont, C.muted, "left");
+                } else if (c.key === "aabout") {
+                  pdf.setTextColor(...C.text);
+                  pdfTextRtl(aboutLines, cx + c.w - cellPadX, topY, { align: "right" });
+                } else if (c.key === "aprice") {
+                  if (ap) writeLtr(`$${formatMoney(aprice)}`, cx + c.w - cellPadX, topY, c.w - 2, altFont, C.primaryDark, "right");
+                }
+                cx += c.w;
               }
-              cx += c.w;
+              y += rowH + 2;
             }
-            y += rowH + 2;
           }
           y += 4;
         }
@@ -5484,6 +5521,13 @@
           let sentOk = false;
           try {
             await sendToTelegram(invoice);
+            try {
+              const safeName = sanitizeFilename(name || "order");
+              const stamp = new Date(createdAt).toISOString().slice(0, 19).replace(/[:T]/g, "-");
+              const filename = `invoice_${safeName}_${stamp}.pdf`;
+              const pdfBlob = await buildOrderPdfBlob(invoiceDetails);
+              await sendPdfToTelegram(pdfBlob, filename);
+            } catch {}
             els.confirmOrderBtn.textContent = "تم إرسال الطلب";
             setCheckoutStatus("طلبك وصل إلينا. سوف يتم التواصل معك على واتساب قريباً.", false);
             sentOk = true;
@@ -5512,7 +5556,7 @@
           els.downloadPrintPdfBtn.addEventListener("click", () => {
             const d = state.lastInvoiceDetails;
             if (!d) return;
-            printInvoiceAsPdf(d);
+            downloadInvoicePdf(d);
           });
         }
 
