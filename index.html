@@ -4189,7 +4189,6 @@
         pdf.addFont(PDF_FONT.vfsName, PDF_FONT.family, "normal");
         pdf.setFont(PDF_FONT.family, "normal");
         const supportsR2L = typeof pdf.setR2L === "function";
-        if (supportsR2L) pdf.setR2L(true);
 
         const xLeft = margin;
         const beforeTotal = Number(cartTotalsBefore()) || 0;
@@ -4211,11 +4210,17 @@
           headerBg: [10, 163, 163],
         };
 
+        const pdfTextRtl = (lines, x, y, opts) => {
+          if (supportsR2L) pdf.setR2L(true);
+          pdf.text(lines, x, y, opts);
+          if (supportsR2L) pdf.setR2L(false);
+        };
+
         const toArabicPdfText = (input) => {
           const raw = String(input ?? "").trim();
           if (!raw) return "";
-          if (supportsR2L) return raw;
           const shaped = shapeArabicForPdf(raw);
+          if (supportsR2L) return shaped;
           const isArabicLike = (ch) => /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(ch);
           const chars = Array.from(shaped);
           const runs = [];
@@ -4248,13 +4253,14 @@
           pdf.setTextColor(...color);
           pdf.setFontSize(size);
           const lines = pdf.splitTextToSize(t, Math.max(1, w));
-          pdf.text(lines, x, y, { align });
+          pdfTextRtl(lines, x, y, { align, lang: "ar" });
           return { y: y + pdfLineHeight(pdf, size) * lines.length, lines };
         };
 
         const writeLtr = (text, x, y, w, size, color = C.text, align = "left") => {
           const t = String(text ?? "").trim();
           if (!t) return { y, lines: [] };
+          if (supportsR2L) pdf.setR2L(false);
           pdf.setTextColor(...color);
           pdf.setFontSize(size);
           const lines = pdf.splitTextToSize(t, Math.max(1, w));
@@ -4265,16 +4271,18 @@
         const drawTopHeader = (y) => {
           pdf.setTextColor(...C.muted);
           pdf.setFontSize(11);
-          pdf.text(toArabicPdfText(`تاريخ ووقت الإصدار: ${formatOrderDate(createdAt)}`), xRight, y, { align: "right" });
-          pdf.text(toArabicPdfText("فاتورة"), xLeft, y, { align: "left" });
+          const dateText = toArabicPdfText(`تاريخ ووقت الإصدار: ${formatOrderDate(createdAt)}`);
+          const invoiceText = toArabicPdfText("فاتورة");
+          pdfTextRtl(dateText, xRight, y, { align: "right", lang: "ar" });
+          pdfTextRtl(invoiceText, xLeft, y, { align: "left", lang: "ar" });
           y += 6;
           pdf.setTextColor(...C.primaryDark);
           pdf.setFontSize(24);
-          pdf.text("TOTAL SYRIA TOOLS", pageWidth / 2, y, { align: "center", lang: "en" });
+          writeLtr("TOTAL SYRIA TOOLS", pageWidth / 2, y, maxWidth, 24, C.primaryDark, "center");
           y += 6;
           pdf.setTextColor(...C.muted);
           pdf.setFontSize(12);
-          pdf.text(toArabicPdfText("شركة توتال سوريا"), pageWidth / 2, y, { align: "center" });
+          pdfTextRtl(toArabicPdfText("شركة توتال سوريا"), pageWidth / 2, y, { align: "center", lang: "ar" });
           return y + 6;
         };
 
@@ -4321,13 +4329,24 @@
 
         const normalizedAltGroups = enableAlt ? normalizeAltGroups(altGroups) : [];
         const altPreviewData = enableAlt ? buildAltPreviewData(normalizedAltGroups) : [];
+        const formatCodeLabel = (product, fallbackCode) => {
+          const c1 = product ? String(product.code1 || "").trim() : "";
+          const c2 = product ? String(product.code2 || "").trim() : "";
+          const fb = String(fallbackCode || "").trim();
+          const primary = c2 || fb || c1;
+          const secondary = c2 && c1 && c1 !== c2 ? c1 : "";
+          return secondary ? `${primary} (${secondary})` : primary;
+        };
         const altCodesByCartKey = new Map();
         if (enableAlt) {
           for (const g of altPreviewData) {
             const cartItem = g.originalCode ? findCartItemByAnyCode(g.originalCode) : null;
             const k = cartItem ? productKey(cartItem.product) : "";
             if (!k) continue;
-            const codes = g.alts.map((x) => String(x.code ?? "").trim()).filter(Boolean);
+            const codes = g.alts
+              .map((x) => formatCodeLabel(x?.product, x?.code))
+              .map((s) => String(s || "").trim())
+              .filter(Boolean);
             if (codes.length > 0) altCodesByCartKey.set(k, codes);
           }
         }
@@ -4427,7 +4446,7 @@
               writeLtr(String(p.code2 || ""), cx + cellPadX, topY, c.w - cellPadX * 2, fontBody, C.muted, "left");
             } else if (c.key === "about") {
               pdf.setTextColor(...C.text);
-              pdf.text(aboutLines, cx + c.w - cellPadX, topY, { align: "right" });
+              pdfTextRtl(aboutLines, cx + c.w - cellPadX, topY, { align: "right", lang: "ar" });
             } else if (c.key === "qty") {
               writeLtr(String(qty), cx + c.w / 2, topY, c.w - 2, fontBody, C.text, "center");
             } else if (c.key === "unitAfter") {
@@ -4442,7 +4461,7 @@
               writeLtr(`$${formatMoney(lineBefore)}`, cx + c.w - cellPadX, topY, c.w - 2, fontBody, C.muted, "right");
             } else if (c.key === "alts") {
               pdf.setTextColor(...C.muted);
-              pdf.text(altsLines, cx + c.w - cellPadX, topY, { align: "right" });
+              pdfTextRtl(altsLines, cx + c.w - cellPadX, topY, { align: "right", lang: "ar" });
             }
             cx += c.w;
           }
@@ -4456,7 +4475,7 @@
         sy = writeRtl(`قيمة الخصم: $${formatMoney(discountValue)} (${formatMoney(discountPct)}%)`, xRight - 4, sy, maxWidth - 8, 13).y;
         pdf.setTextColor(...C.danger);
         pdf.setFontSize(16);
-        pdf.text(toArabicPdfText(`الإجمالي بعد الخصم: $${formatMoney(afterTotal)}`), xRight - 4, sy + 2, { align: "right" });
+        pdfTextRtl(toArabicPdfText(`الإجمالي بعد الخصم: $${formatMoney(afterTotal)}`), xRight - 4, sy + 2, { align: "right", lang: "ar" });
         y += 34 + 8;
 
         const notesInnerW = maxWidth - 8;
@@ -4504,7 +4523,8 @@
               const tx = c.dir === "rtl" ? cx + c.w - cellPadX : cx + cellPadX;
               const align = c.dir === "rtl" ? "right" : c.align;
               const title = c.dir === "rtl" ? toArabicPdfText(String(c.title)) : String(c.title);
-              pdf.text(title, tx, yy + 6.8, { align, lang: c.dir === "rtl" ? "ar" : "en" });
+              if (c.dir === "rtl") pdfTextRtl(title, tx, yy + 6.8, { align, lang: "ar" });
+              else pdf.text(title, tx, yy + 6.8, { align, lang: "en" });
               cx += c.w;
             }
             return yy + headerH;
@@ -4516,13 +4536,13 @@
           for (let gi = 0; gi < altPreviewData.length; gi++) {
             const g = altPreviewData[gi];
             const qty = g.qty || 0;
-            const origCode = g.originalProduct ? String(g.originalProduct.code1 || g.originalCode || "").trim() : String(g.originalCode || "").trim();
+            const origCode = formatCodeLabel(g.originalProduct, g.originalCode);
             const origAbout = g.originalProduct ? String(g.originalProduct.about || "").trim() : "";
             const origText = `${origCode || "—"}${origAbout ? `\n${origAbout}` : ""}`;
             const altCodes = g.alts
               .map((a, idx) => {
                 const p = a?.product;
-                const code = p ? String(p.code1 || a.code || "").trim() : String(a?.code || "").trim();
+                const code = formatCodeLabel(p, a?.code);
                 const about = p ? String(p.about || "").trim() : "";
                 const line = code ? `بديل ${idx + 1}: ${code}` : `بديل ${idx + 1}: —`;
                 return about ? `${line}\n${about}` : line;
@@ -4546,12 +4566,12 @@
               if (c.key === "g") {
                 writeLtr(String(gi + 1), cx + c.w / 2, topY, c.w - 2, altFont, C.text, "center");
               } else if (c.key === "orig") {
-                pdf.text(origLines, cx + c.w - cellPadX, topY, { align: "right" });
+                pdfTextRtl(origLines, cx + c.w - cellPadX, topY, { align: "right", lang: "ar" });
               } else if (c.key === "qty") {
                 writeLtr(String(qty || 0), cx + c.w / 2, topY, c.w - 2, altFont, C.text, "center");
               } else if (c.key === "alts") {
                 pdf.setTextColor(...C.muted);
-                pdf.text(altsLines, cx + c.w - cellPadX, topY, { align: "right" });
+                pdfTextRtl(altsLines, cx + c.w - cellPadX, topY, { align: "right", lang: "ar" });
               }
               cx += c.w;
             }
