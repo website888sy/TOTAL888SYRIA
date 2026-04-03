@@ -852,7 +852,7 @@
       .field-row {
         display: flex;
         gap: 8px;
-        align-items: stretch;
+        align-items: center;
       }
 
       .field-row > input,
@@ -862,25 +862,23 @@
       }
 
       .field-clear {
-        width: auto;
+        width: 40px;
         min-width: 44px;
-        max-width: 150px;
-        padding: 0 10px;
+        max-width: 44px;
+        padding: 0;
         border-radius: 12px;
-        border: 1px solid var(--border);
-        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(198, 40, 40, 0.45);
+        background: rgba(255, 235, 238, 0.95);
         font-weight: 900;
-        font-size: 11px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        color: var(--muted);
+        font-size: 16px;
+        line-height: 1;
+        color: #c62828;
         cursor: pointer;
       }
 
       .field-clear:hover {
-        color: var(--text);
-        border-color: rgba(10, 163, 163, 0.35);
+        color: #8e0000;
+        border-color: rgba(198, 40, 40, 0.75);
       }
 
       .choice-row {
@@ -1718,7 +1716,7 @@
                 <span style="font-weight:800">اسم ثلاثي</span>
                 <div class="field-row">
                   <input id="fullNameInput" type="text" autocomplete="name" required style="padding:12px;border:1px solid var(--border);border-radius:12px" />
-                  <button class="field-clear" type="button" data-clear="fullNameInput" aria-label="حذف محتوى الحقل" title="حذف محتوى الحقل">حذف محتوى الحقل</button>
+                  <button class="field-clear" type="button" data-clear="fullNameInput" aria-label="حذف" title="حذف">🗑</button>
                 </div>
               </label>
               <label style="display:grid;gap:6px">
@@ -1732,7 +1730,7 @@
                     placeholder="اكتب المحافظة"
                     style="padding:12px;border:1px solid var(--border);border-radius:12px"
                   />
-                  <button class="field-clear" type="button" data-clear="govInput" aria-label="حذف محتوى الحقل" title="حذف محتوى الحقل">حذف محتوى الحقل</button>
+                  <button class="field-clear" type="button" data-clear="govInput" aria-label="حذف" title="حذف">🗑</button>
                 </div>
               </label>
               <label style="display:grid;gap:6px">
@@ -1746,7 +1744,7 @@
                     required
                     style="padding:12px;border:1px solid var(--border);border-radius:12px;direction:ltr;unicode-bidi:plaintext"
                   />
-                  <button class="field-clear" type="button" data-clear="phoneInput" aria-label="حذف محتوى الحقل" title="حذف محتوى الحقل">حذف محتوى الحقل</button>
+                  <button class="field-clear" type="button" data-clear="phoneInput" aria-label="حذف" title="حذف">🗑</button>
                 </div>
               </label>
               <div class="checkout-choices">
@@ -1766,7 +1764,7 @@
                     <span style="font-weight:800">عنوان ضمن حمص</span>
                     <div class="field-row">
                       <input id="homsAddressInput" type="text" autocomplete="street-address" style="padding:12px;border:1px solid var(--border);border-radius:12px" />
-                      <button class="field-clear" type="button" data-clear="homsAddressInput" aria-label="حذف محتوى الحقل" title="حذف محتوى الحقل">حذف محتوى الحقل</button>
+                      <button class="field-clear" type="button" data-clear="homsAddressInput" aria-label="حذف" title="حذف">🗑</button>
                     </div>
                   </label>
                 </div>
@@ -1777,7 +1775,7 @@
                     <span style="font-weight:800">عنوان مركز الشحن</span>
                     <div class="field-row">
                       <input id="shipCenterInput" type="text" autocomplete="street-address" style="padding:12px;border:1px solid var(--border);border-radius:12px" />
-                      <button class="field-clear" type="button" data-clear="shipCenterInput" aria-label="حذف محتوى الحقل" title="حذف محتوى الحقل">حذف محتوى الحقل</button>
+                      <button class="field-clear" type="button" data-clear="shipCenterInput" aria-label="حذف" title="حذف">🗑</button>
                     </div>
                   </label>
                   <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -1798,7 +1796,7 @@
                     placeholder="اكتب أي ملاحظة تخص الطلب..."
                     style="padding:12px;border:1px solid var(--border);border-radius:12px;font-family:inherit;font-size:13px;min-height:110px;resize:vertical"
                   ></textarea>
-                  <button class="field-clear" type="button" data-clear="orderNotesInput" aria-label="حذف محتوى الحقل" title="حذف محتوى الحقل">حذف محتوى الحقل</button>
+                  <button class="field-clear" type="button" data-clear="orderNotesInput" aria-label="حذف" title="حذف">🗑</button>
                 </div>
               </label>
               <div style="display:grid;gap:8px">
@@ -1847,6 +1845,8 @@
                 <button class="btn btn-primary" id="confirmOrderBtn" type="submit" style="flex:1">إتمام الطلب</button>
                 <button class="btn btn-ghost" id="copyInvoiceBtn" type="button" style="flex:1;display:none">نسخ الفاتورة</button>
                 <a class="btn btn-ghost" id="downloadPdfBtn" href="#" download style="flex:1;display:none">تنزيل PDF</a>
+                <button class="btn btn-ghost" id="downloadExcelBtn" type="button" style="flex:1;display:none">تحميل الفاتورة بصيغة الأكسل</button>
+                <button class="btn btn-ghost" id="downloadPrintPdfBtn" type="button" style="flex:1;display:none">تحميل فاتورة بصيغة PDF</button>
               </div>
               <div class="mini-note" style="font-weight:900">
                 قد يحدث بطئ مزامنة بين المستودع والموقع الإلكتروني , قد لا يتم إرسال كامل الطلب ووجود بعض النقص للمواد أو لا ترسل بسبب التأخير , لذلك سيتم إرسال الفاتورة ولو هناك نقص مع خصم قيمة المفقود
@@ -2117,6 +2117,8 @@
         confirmOrderBtn: document.getElementById("confirmOrderBtn"),
         copyInvoiceBtn: document.getElementById("copyInvoiceBtn"),
         downloadPdfBtn: document.getElementById("downloadPdfBtn"),
+        downloadExcelBtn: document.getElementById("downloadExcelBtn"),
+        downloadPrintPdfBtn: document.getElementById("downloadPrintPdfBtn"),
         invoiceNote: document.getElementById("invoiceNote"),
         whatsappAfterOrder: document.getElementById("whatsappAfterOrder"),
         orderSummary: document.getElementById("orderSummary"),
@@ -2157,6 +2159,7 @@
         orders: [],
         lastQueryTokens: [],
         lastInvoiceText: "",
+        lastInvoiceDetails: null,
         lastPdfUrl: "",
         viewMode: "compact",
         outOfStockSets: { TOTAL: new Set(), WADFOW: new Set() },
@@ -2971,6 +2974,7 @@
                 <div style="display:flex;gap:10px;flex-wrap:wrap">
                   <button class="btn btn-ghost" type="button" data-alt-add="1">+ بديل</button>
                   <button class="btn btn-ghost" type="button" data-alt-remove="1">- بديل</button>
+                  <button class="field-clear" type="button" data-alt-delete-group="1" aria-label="حذف المجموعة" title="حذف المجموعة">🗑</button>
                 </div>
               </div>
               <label style="display:grid;gap:6px">
@@ -2985,7 +2989,7 @@
                     placeholder="${codes.length ? "اختر من السلة أو اكتب الكود" : "اكتب الكود"}"
                     style="padding:12px;border:1px solid var(--border);border-radius:12px;direction:ltr;unicode-bidi:plaintext"
                   />
-                  <button class="field-clear" type="button" data-clear-nearest="1" aria-label="حذف محتوى الحقل" title="حذف محتوى الحقل">حذف محتوى الحقل</button>
+                  <button class="field-clear" type="button" data-clear-nearest="1" aria-label="حذف" title="حذف">🗑</button>
                 </div>
               </label>
               <div style="display:grid;gap:10px" data-alt-list="1">`;
@@ -2994,7 +2998,7 @@
                   <span style="font-weight:800">الكود الاحتياطي ${ai + 1}</span>
                   <div class="field-row">
                     <input data-alt-code="1" type="text" value="${escapeHtmlAttr(alts[ai] || "")}" style="padding:12px;border:1px solid var(--border);border-radius:12px;direction:ltr;unicode-bidi:plaintext" />
-                    <button class="field-clear" type="button" data-clear-nearest="1" aria-label="حذف محتوى الحقل" title="حذف محتوى الحقل">حذف محتوى الحقل</button>
+                    <button class="field-clear" type="button" data-clear-nearest="1" aria-label="حذف" title="حذف">🗑</button>
                   </div>
                 </label>`;
           }
@@ -4063,6 +4067,11 @@
         }
         if (shipCurrency) {
           lines.push(`عملة الدفع: ${shipCurrency}`);
+          if (shipCurrency === "سوري") {
+            lines.push(
+              "ملاحظة: شحن بالسوري سيتم تطبيق زيادة + 1.5 ل.س جديدة لسعر صرف لحظة الإرسال بسبب تذبذب الصرف"
+            );
+          }
           lines.push("");
         }
         if (notes) {
@@ -4070,8 +4079,10 @@
           lines.push("");
         }
 
-        lines.push(`بديل توتال إلى وادفو عند عدم توفره: ${allowSwitch ? "نعم" : "لا"}`);
-        lines.push(`تبديل قريب جداً بنفس العائلة عند عدم توفر المنتج: ${allowFamilySwitch ? "نعم" : "لا"}`);
+        lines.push(`بدل توتال بـ واد فو عند عدم توفره: ${allowSwitch ? "نعم" : "لا"}`);
+        lines.push("");
+        lines.push(`وضع بديل قريب جداً بنفس العائلة عند عدم توفر المنتج: ${allowFamilySwitch ? "نعم" : "لا"}`);
+        lines.push("");
         lines.push(`إرسال الطلب بأسرع ما يمكن ولو كان يوجد بعض النقص: ${fastShipEvenIfMissing ? "نعم" : "لا"}`);
         lines.push("");
 
@@ -4099,9 +4110,12 @@
           const p = it.product;
           const qty = Math.max(1, Number(it.qty) || 1);
           const about = String(p.about ?? "").trim();
-          lines.push(`${idx}-`);
+          lines.push(`#${idx} -`);
+          lines.push("");
           lines.push(String(p.code1 || "—"));
+          lines.push("");
           lines.push(about || "—");
+          lines.push("");
           lines.push(`$${formatMoney(Number(p.priceAfter) || 0)}`);
           if (qty !== 1) lines.push(`الكمية: ${qty}`);
 
@@ -4121,6 +4135,170 @@
           idx++;
         }
         return lines.join("\n").trim();
+      }
+
+      function downloadBlob(filename, blob) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2500);
+      }
+
+      function buildInvoiceExcelHtml(details) {
+        const name = String(details.name ?? "").trim() || "—";
+        const gov = String(details.gov ?? "").trim() || "—";
+        const phone = String(details.phone ?? "").trim() || "—";
+        const shipType = String(details.shipType ?? "").trim();
+        const homsAddress = String(details.homsAddress ?? "").trim() || "—";
+        const shipCenter = String(details.shipCenter ?? "").trim() || "—";
+        const shipCurrency = String(details.shipCurrency ?? "").trim();
+        const notes = String(details.notes ?? "").trim();
+        const allowSwitch = Boolean(details.allowSwitch);
+        const allowFamilySwitch = Boolean(details.allowFamilySwitch);
+        const fastShipEvenIfMissing = Boolean(details.fastShipEvenIfMissing);
+        const enableAlt = Boolean(details.enableAlt);
+        const altGroups = Array.isArray(details.altGroups) ? details.altGroups : [];
+
+        const normalizedAltGroups = enableAlt ? normalizeAltGroups(altGroups) : [];
+        const altPreviewData = enableAlt ? buildAltPreviewData(normalizedAltGroups) : [];
+        const altAboutByCartKey = new Map();
+        if (enableAlt) {
+          for (const g of altPreviewData) {
+            const cartItem = g.originalCode ? findCartItemByAnyCode(g.originalCode) : null;
+            const k = cartItem ? productKey(cartItem.product) : "";
+            if (!k) continue;
+            const abouts = (Array.isArray(g.alts) ? g.alts : [])
+              .map((a) => String(a?.product?.about || "").trim())
+              .filter(Boolean);
+            if (abouts.length > 0) altAboutByCartKey.set(k, abouts);
+          }
+        }
+
+        const shipLine =
+          shipType === "HOMS"
+            ? `استلام ضمن حمص — ${escapeHtml(homsAddress)}`
+            : `شحن للمحافظات — ${escapeHtml(shipCenter)}`;
+
+        const currencyNote =
+          shipCurrency === "سوري"
+            ? "شحن بالسوري سيتم تطبيق زيادة + 1.5 ل.س جديدة لسعر صرف لحظة الإرسال بسبب تذبذب الصرف"
+            : "";
+
+        let itemsRows = "";
+        let idx = 1;
+        for (const it of state.cart.values()) {
+          const p = it.product;
+          const qty = Math.max(1, Number(it.qty) || 1);
+          const alts = enableAlt ? altAboutByCartKey.get(productKey(p)) || [] : [];
+          const altsHtml = alts.map((x) => escapeHtml(String(x || ""))).join("<br/><br/>");
+          itemsRows += `<tr>
+            <td style="white-space:nowrap">#${idx}</td>
+            <td style="direction:ltr;unicode-bidi:plaintext">${escapeHtml(String(p.code1 || ""))}</td>
+            <td>${escapeHtml(String(p.about || ""))}</td>
+            <td style="direction:ltr;unicode-bidi:plaintext">$${escapeHtml(formatMoney(Number(p.priceAfter) || 0))}</td>
+            <td style="white-space:nowrap">${escapeHtml(String(qty))}</td>
+            <td>${altsHtml}</td>
+          </tr>`;
+          idx++;
+        }
+
+        const total = `$${formatMoney(cartTotals())}`;
+        const html = `<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <title>فاتورة</title>
+    <style>
+      body { font-family: Tahoma, Arial, sans-serif; direction: rtl; }
+      table { border-collapse: collapse; width: 100%; }
+      td, th { border: 1px solid #999; padding: 8px; vertical-align: top; }
+      th { background: #f5f5f5; }
+    </style>
+  </head>
+  <body>
+    <table>
+      <tr><th colspan="2">بيانات الزبون</th></tr>
+      <tr><td>الاسم الثلاثي</td><td>${escapeHtml(name)}</td></tr>
+      <tr><td>المحافظة</td><td>${escapeHtml(gov)}</td></tr>
+      <tr><td>رقم الهاتف</td><td style="direction:ltr;unicode-bidi:plaintext">${escapeHtml(phone)}</td></tr>
+      <tr><td>طريقة الاستلام</td><td>${shipLine}</td></tr>
+      <tr><td>عملة الدفع</td><td>${escapeHtml(shipCurrency || "—")}${currencyNote ? `<br/><br/>${escapeHtml(currencyNote)}` : ""}</td></tr>
+      <tr><td>ملاحظات</td><td>${notes ? escapeHtml(notes) : "—"}</td></tr>
+      <tr><th colspan="2">الشروط</th></tr>
+      <tr><td colspan="2">${escapeHtml(`بدل توتال بـ واد فو عند عدم توفره: ${allowSwitch ? "نعم" : "لا"}`)}<br/><br/>
+      ${escapeHtml(`وضع بديل قريب جداً بنفس العائلة عند عدم توفر المنتج: ${allowFamilySwitch ? "نعم" : "لا"}`)}<br/><br/>
+      ${escapeHtml(`إرسال الطلب بأسرع ما يمكن ولو كان يوجد بعض النقص: ${fastShipEvenIfMissing ? "نعم" : "لا"}`)}</td></tr>
+      <tr><td>الإجمالي</td><td style="direction:ltr;unicode-bidi:plaintext">${escapeHtml(total)}</td></tr>
+    </table>
+    <br/>
+    <table>
+      <tr>
+        <th>التسلسل</th>
+        <th>CODE1</th>
+        <th>ABOUT</th>
+        <th>PRICE</th>
+        <th>QTY</th>
+        <th>بدائل (ABOUT)</th>
+      </tr>
+      ${itemsRows || ""}
+    </table>
+  </body>
+</html>`;
+        return html;
+      }
+
+      function downloadInvoiceExcel(details) {
+        const html = buildInvoiceExcelHtml(details);
+        const blob = new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8" });
+        downloadBlob("invoice.xls", blob);
+      }
+
+      function printInvoiceAsPdf(details) {
+        const txt = buildInvoiceText(details);
+        const html = `<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <title>فاتورة</title>
+    <style>
+      body { font-family: Tahoma, Arial, sans-serif; direction: rtl; padding: 18px; }
+      h1 { font-size: 18px; margin: 0 0 12px; }
+      pre { white-space: pre-wrap; direction: rtl; unicode-bidi: plaintext; font-size: 14px; line-height: 1.6; }
+    </style>
+  </head>
+  <body>
+    <h1>فاتورة</h1>
+    <pre>${escapeHtml(txt)}</pre>
+  </body>
+</html>`;
+        const iframe = document.createElement("iframe");
+        iframe.style.position = "fixed";
+        iframe.style.right = "0";
+        iframe.style.bottom = "0";
+        iframe.style.width = "0";
+        iframe.style.height = "0";
+        iframe.style.border = "0";
+        document.body.appendChild(iframe);
+        const doc = iframe.contentWindow?.document;
+        if (!doc || !iframe.contentWindow) {
+          iframe.remove();
+          return;
+        }
+        doc.open();
+        doc.write(html);
+        doc.close();
+        iframe.onload = () => {
+          try {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+          } finally {
+            setTimeout(() => iframe.remove(), 1500);
+          }
+        };
       }
 
       function splitText(text, maxLen) {
@@ -4685,10 +4863,13 @@
         els.copyInvoiceBtn.style.display = "none";
         els.invoiceNote.style.display = "none";
         if (els.downloadPdfBtn) els.downloadPdfBtn.style.display = "none";
+        if (els.downloadExcelBtn) els.downloadExcelBtn.style.display = "none";
+        if (els.downloadPrintPdfBtn) els.downloadPrintPdfBtn.style.display = "none";
         try {
           if (state.lastPdfUrl) URL.revokeObjectURL(state.lastPdfUrl);
         } catch {}
         state.lastPdfUrl = "";
+        state.lastInvoiceDetails = null;
         els.whatsappAfterOrder.style.display = "none";
         els.confirmOrderBtn.disabled = false;
         els.confirmOrderBtn.textContent = "إتمام الطلب";
@@ -5176,7 +5357,8 @@
             if (!(t instanceof HTMLElement)) return;
             const addBtn = t.closest("[data-alt-add]");
             const remBtn = t.closest("[data-alt-remove]");
-            if (!addBtn && !remBtn) return;
+            const delGroupBtn = t.closest("[data-alt-delete-group]");
+            if (!addBtn && !remBtn && !delGroupBtn) return;
             const groupEl = t.closest("[data-alt-group]");
             if (!(groupEl instanceof HTMLElement)) return;
             const gi = Number(groupEl.getAttribute("data-alt-group"));
@@ -5185,6 +5367,16 @@
             if (!current[gi]) return;
             const g = current[gi];
             const alts = Array.isArray(g.alts) ? g.alts.slice() : [];
+            if (delGroupBtn) {
+              current.splice(gi, 1);
+              if (current.length === 0) current.push({ original: "", alts: ["", ""] });
+              renderAltGroups(current);
+              if (els.altPreview) els.altPreview.innerHTML = "";
+              try {
+                saveCustomerDraft();
+              } catch {}
+              return;
+            }
             if (addBtn) {
               if (alts.length >= 5) return showToast("الحد الأعلى للبدائل 5", 1600);
               alts.push("");
@@ -5247,7 +5439,7 @@
           } catch {}
 
           const createdAt = Date.now();
-          const invoice = buildInvoiceText({
+          const invoiceDetails = {
             createdAt,
             name,
             gov,
@@ -5262,7 +5454,8 @@
             fastShipEvenIfMissing,
             enableAlt,
             altGroups,
-          });
+          };
+          const invoice = buildInvoiceText(invoiceDetails);
           addOrderToHistory({
             createdAt,
             name,
@@ -5279,9 +5472,12 @@
             invoice,
           });
           state.lastInvoiceText = invoice;
+          state.lastInvoiceDetails = invoiceDetails;
           els.copyInvoiceBtn.style.display = "";
           els.invoiceNote.style.display = "";
           if (els.downloadPdfBtn) els.downloadPdfBtn.style.display = "none";
+          if (els.downloadExcelBtn) els.downloadExcelBtn.style.display = "";
+          if (els.downloadPrintPdfBtn) els.downloadPrintPdfBtn.style.display = "";
           els.confirmOrderBtn.disabled = true;
           els.confirmOrderBtn.textContent = "جارٍ الإرسال...";
           setCheckoutStatus("جارٍ إرسال الطلب...", false);
@@ -5304,6 +5500,21 @@
           if (!state.lastInvoiceText) return;
           await copyText(state.lastInvoiceText);
         });
+
+        if (els.downloadExcelBtn) {
+          els.downloadExcelBtn.addEventListener("click", () => {
+            const d = state.lastInvoiceDetails;
+            if (!d) return;
+            downloadInvoiceExcel(d);
+          });
+        }
+        if (els.downloadPrintPdfBtn) {
+          els.downloadPrintPdfBtn.addEventListener("click", () => {
+            const d = state.lastInvoiceDetails;
+            if (!d) return;
+            printInvoiceAsPdf(d);
+          });
+        }
 
         els.complaintForm.addEventListener("submit", async (e) => {
           e.preventDefault();
