@@ -4215,9 +4215,9 @@
         const toArabicPdfText = (input) => {
           const raw = String(input ?? "").trim();
           if (!raw) return "";
-          const shaped = shapeArabicForPdf(raw);
           const isArabicLike = (ch) => /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(ch);
-          const chars = Array.from(shaped);
+          if (!Array.from(raw).some(isArabicLike)) return raw;
+          const chars = Array.from(raw);
           const runs = [];
           let cur = "";
           let curAr = null;
@@ -4237,7 +4237,8 @@
           return runs
             .map((r) => {
               if (!r.ar) return r.v;
-              return Array.from(r.v).reverse().join("");
+              const rev = Array.from(r.v).reverse().join("");
+              return shapeArabicForPdf(rev);
             })
             .join("");
         };
@@ -4248,7 +4249,7 @@
           pdf.setTextColor(...color);
           pdf.setFontSize(size);
           const lines = pdf.splitTextToSize(t, Math.max(1, w));
-          pdfTextRtl(lines, x, y, { align, lang: "ar" });
+          pdfTextRtl(lines, x, y, { align });
           return { y: y + pdfLineHeight(pdf, size) * lines.length, lines };
         };
 
@@ -4267,8 +4268,8 @@
           pdf.setFontSize(11);
           const dateText = toArabicPdfText(`تاريخ ووقت الإصدار: ${formatOrderDate(createdAt)}`);
           const invoiceText = toArabicPdfText("فاتورة");
-          pdfTextRtl(dateText, xRight, y, { align: "right", lang: "ar" });
-          pdfTextRtl(invoiceText, xLeft, y, { align: "left", lang: "ar" });
+          pdfTextRtl(dateText, xRight, y, { align: "right" });
+          pdfTextRtl(invoiceText, xLeft, y, { align: "left" });
           y += 6;
           pdf.setTextColor(...C.primaryDark);
           pdf.setFontSize(24);
@@ -4276,7 +4277,7 @@
           y += 6;
           pdf.setTextColor(...C.muted);
           pdf.setFontSize(12);
-          pdfTextRtl(toArabicPdfText("شركة توتال سوريا"), pageWidth / 2, y, { align: "center", lang: "ar" });
+          pdfTextRtl(toArabicPdfText("شركة توتال سوريا"), pageWidth / 2, y, { align: "center" });
           return y + 6;
         };
 
@@ -4327,9 +4328,7 @@
           const c1 = product ? String(product.code1 || "").trim() : "";
           const c2 = product ? String(product.code2 || "").trim() : "";
           const fb = String(fallbackCode || "").trim();
-          const primary = c2 || fb || c1;
-          const secondary = c2 && c1 && c1 !== c2 ? c1 : "";
-          return secondary ? `${primary} (${secondary})` : primary;
+          return c2 || fb || c1;
         };
         const altCodesByCartKey = new Map();
         if (enableAlt) {
@@ -4440,7 +4439,7 @@
               writeLtr(String(p.code2 || ""), cx + cellPadX, topY, c.w - cellPadX * 2, fontBody, C.muted, "left");
             } else if (c.key === "about") {
               pdf.setTextColor(...C.text);
-              pdfTextRtl(aboutLines, cx + c.w - cellPadX, topY, { align: "right", lang: "ar" });
+              pdfTextRtl(aboutLines, cx + c.w - cellPadX, topY, { align: "right" });
             } else if (c.key === "qty") {
               writeLtr(String(qty), cx + c.w / 2, topY, c.w - 2, fontBody, C.text, "center");
             } else if (c.key === "unitAfter") {
@@ -4455,7 +4454,7 @@
               writeLtr(`$${formatMoney(lineBefore)}`, cx + c.w - cellPadX, topY, c.w - 2, fontBody, C.muted, "right");
             } else if (c.key === "alts") {
               pdf.setTextColor(...C.muted);
-              pdfTextRtl(altsLines, cx + c.w - cellPadX, topY, { align: "right", lang: "ar" });
+              pdfTextRtl(altsLines, cx + c.w - cellPadX, topY, { align: "right" });
             }
             cx += c.w;
           }
@@ -4469,7 +4468,7 @@
         sy = writeRtl(`قيمة الخصم: $${formatMoney(discountValue)} (${formatMoney(discountPct)}%)`, xRight - 4, sy, maxWidth - 8, 13).y;
         pdf.setTextColor(...C.danger);
         pdf.setFontSize(16);
-        pdfTextRtl(toArabicPdfText(`الإجمالي بعد الخصم: $${formatMoney(afterTotal)}`), xRight - 4, sy + 2, { align: "right", lang: "ar" });
+        pdfTextRtl(toArabicPdfText(`الإجمالي بعد الخصم: $${formatMoney(afterTotal)}`), xRight - 4, sy + 2, { align: "right" });
         y += 34 + 8;
 
         const notesInnerW = maxWidth - 8;
@@ -4517,7 +4516,7 @@
               const tx = c.dir === "rtl" ? cx + c.w - cellPadX : cx + cellPadX;
               const align = c.dir === "rtl" ? "right" : c.align;
               const title = c.dir === "rtl" ? toArabicPdfText(String(c.title)) : String(c.title);
-              if (c.dir === "rtl") pdfTextRtl(title, tx, yy + 6.8, { align, lang: "ar" });
+              if (c.dir === "rtl") pdfTextRtl(title, tx, yy + 6.8, { align });
               else pdf.text(title, tx, yy + 6.8, { align, lang: "en" });
               cx += c.w;
             }
@@ -4560,12 +4559,12 @@
               if (c.key === "g") {
                 writeLtr(String(gi + 1), cx + c.w / 2, topY, c.w - 2, altFont, C.text, "center");
               } else if (c.key === "orig") {
-                pdfTextRtl(origLines, cx + c.w - cellPadX, topY, { align: "right", lang: "ar" });
+                pdfTextRtl(origLines, cx + c.w - cellPadX, topY, { align: "right" });
               } else if (c.key === "qty") {
                 writeLtr(String(qty || 0), cx + c.w / 2, topY, c.w - 2, altFont, C.text, "center");
               } else if (c.key === "alts") {
                 pdf.setTextColor(...C.muted);
-                pdfTextRtl(altsLines, cx + c.w - cellPadX, topY, { align: "right", lang: "ar" });
+                pdfTextRtl(altsLines, cx + c.w - cellPadX, topY, { align: "right" });
               }
               cx += c.w;
             }
