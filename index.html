@@ -1951,6 +1951,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script>
       const CONFIG = {
         CSV_URL: "products.csv",
@@ -2493,10 +2494,10 @@
       function calcPriceAfter(rawPrice, category) {
         const raw = Number(rawPrice);
         if (!Number.isFinite(raw)) return 0;
+        const rate = Math.max(0, Math.min(0.95, discountForCategory(category)));
+        if (rate > 0) return raw * (1 + rate);
         const markup = Number(CONFIG.MARKUP_RATE) || 0;
-        const d = Math.max(0, Math.min(0.95, discountForCategory(category)));
-        const before = raw * (1 + markup);
-        return before * (1 - d);
+        return raw * (1 + markup);
       }
 
       function formatMoney(v) {
@@ -2505,12 +2506,22 @@
         return n.toFixed(2);
       }
 
+      function toWesternDigits(input) {
+        const s = String(input ?? "");
+        return s.replace(/[\u0660-\u0669\u06F0-\u06F9]/g, (ch) => {
+          const c = ch.charCodeAt(0);
+          if (c >= 0x0660 && c <= 0x0669) return String(c - 0x0660);
+          if (c >= 0x06f0 && c <= 0x06f9) return String(c - 0x06f0);
+          return ch;
+        });
+      }
+
       function formatOrderDate(ts) {
         const d = new Date(Number(ts) || Date.now());
         try {
-          return d.toLocaleString("ar-SY");
+          return toWesternDigits(d.toLocaleString("ar-SY"));
         } catch {
-          return d.toISOString();
+          return toWesternDigits(d.toISOString());
         }
       }
 
@@ -4395,9 +4406,89 @@
         if (!res.ok) throw new Error("Telegram send failed");
       }
 
+      let invoiceFontFacePromise = null;
+      async function ensureInvoiceFontFaceLoaded() {
+        if (invoiceFontFacePromise) return invoiceFontFacePromise;
+        invoiceFontFacePromise = (async () => {
+          try {
+            if (typeof FontFace !== "function" || !document?.fonts?.add) return false;
+            const b64 = await loadPdfFontBase64();
+            const fam = String(PDF_FONT.family || "InvoiceArabic");
+            const ff = new FontFace(fam, `url(data:font/ttf;base64,${b64})`);
+            await ff.load();
+            document.fonts.add(ff);
+            await document.fonts.ready;
+            return true;
+          } catch {
+            return false;
+          }
+        })();
+        return invoiceFontFacePromise;
+      }
+
+      async function buildOrderPdfBlobViaHtml(details) {
+        const jsPDF = window.jspdf?.jsPDF;
+        const html2canvas = window.html2canvas;
+        if (typeof jsPDF !== "function") throw new Error("jsPDF missing");
+        if (typeof html2canvas !== "function") throw new Error("html2canvas missing");
+
+        await ensureInvoiceFontFaceLoaded();
+        try {
+          await document.fonts.ready;
+        } catch {}
+
+        const txt = buildInvoiceText(details);
+        const wrap = document.createElement("div");
+        wrap.setAttribute("dir", "rtl");
+        wrap.style.position = "fixed";
+        wrap.style.left = "-10000px";
+        wrap.style.top = "0";
+        wrap.style.width = "794px";
+        wrap.style.background = "#fff";
+        wrap.style.color = "#0b2b2a";
+        wrap.style.padding = "18px";
+        wrap.style.boxSizing = "border-box";
+        wrap.style.fontFamily = `${String(PDF_FONT.family || "Arial")}, Arial, sans-serif`;
+        wrap.innerHTML = `
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+            <div style="font-weight:900;font-size:20px">فاتورة</div>
+            <div style="font-size:12px;color:#4b6b69">${escapeHtml(formatOrderDate(details?.createdAt))}</div>
+          </div>
+          <div style="height:10px"></div>
+          <pre style="margin:0;white-space:pre-wrap;direction:rtl;unicode-bidi:plaintext;font-size:14px;line-height:1.65">${escapeHtml(
+            toWesternDigits(txt)
+          )}</pre>
+        `;
+        document.body.appendChild(wrap);
+        try {
+          const canvas = await html2canvas(wrap, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+          const imgData = canvas.toDataURL("image/jpeg", 0.92);
+          const pdf = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
+          const imgWidth = 210;
+          const pageHeight = 297;
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          let heightLeft = imgHeight;
+          let position = 0;
+          pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+          while (heightLeft > 0) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+          }
+          return pdf.output("blob");
+        } finally {
+          wrap.remove();
+        }
+      }
+
       async function buildOrderPdfBlob(details) {
         const jsPDF = window.jspdf?.jsPDF;
         if (typeof jsPDF !== "function") throw new Error("jsPDF missing");
+        try {
+          if (typeof window.html2canvas === "function") return await buildOrderPdfBlobViaHtml(details);
+        } catch {}
 
         const createdAt = Number(details.createdAt) || Date.now();
         const name = String(details.name ?? "").trim();
