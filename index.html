@@ -5607,13 +5607,19 @@
             if ((s.startsWith("`") && s.endsWith("`")) || (s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
               s = s.slice(1, -1).trim();
             }
+            const sanitizeUrl = (u) =>
+              String(u ?? "")
+                .replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, "")
+                .replace(/\s+/g, "")
+                .replace(/;+$/g, "")
+                .trim();
             const idx = s.search(/https?:\/\//i);
             if (idx >= 0) {
               const tail = s.slice(idx).trim();
-              return String(tail.split(/\s+/)[0] ?? "").trim();
+              return sanitizeUrl(String(tail.split(/\s+/)[0] ?? ""));
             }
-            if (s.startsWith("//")) return `https:${s}`;
-            return s;
+            if (s.startsWith("//")) return sanitizeUrl(`https:${s}`);
+            return sanitizeUrl(s);
           };
           for (let i = 1; i < lines.length; i++) {
             const colsRaw = parseCsvLine(lines[i], delimiter);
