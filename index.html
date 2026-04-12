@@ -2428,6 +2428,34 @@
         return s;
       }
 
+      function parsePriceNumber(value) {
+        const raw = String(value ?? "").trim();
+        if (!raw) return 0;
+        let s = raw.replace(/[^\d.,-]/g, "");
+        if (!s) return 0;
+        const sign = s.includes("-") ? -1 : 1;
+        s = s.replace(/-/g, "");
+
+        const lastDot = s.lastIndexOf(".");
+        const lastComma = s.lastIndexOf(",");
+        if (lastDot >= 0 && lastComma >= 0) {
+          if (lastDot > lastComma) {
+            s = s.replace(/,/g, "");
+          } else {
+            s = s.replace(/\./g, "");
+            s = s.replace(/,/g, ".");
+          }
+        } else if (lastComma >= 0) {
+          const parts = s.split(",");
+          if (parts.length === 2 && parts[1].length > 0 && parts[1].length <= 2) s = `${parts[0]}.${parts[1]}`;
+          else s = s.replace(/,/g, "");
+        }
+
+        const n = Number(s);
+        if (!Number.isFinite(n)) return 0;
+        return n * sign;
+      }
+
       function getCategoryFromAbout(about) {
         const a = safeLower(about);
         if (a.includes("ملغى") || a.includes("ملغي")) return "UNAVAILABLE";
@@ -2575,9 +2603,9 @@
           "https://raw.githubusercontent.com/google/fonts/main/ofl/amiri/Amiri-Regular.ttf",
           "https://db.onlinewebfonts.com/t/157ad1135ef04af4b68096015987c5eb.ttf",
         ],
-        vfsName: "NotoSansArabic.ttf",
-        family: "NotoSansArabic",
-        cacheKey: "hjy_pdf_font_noto_ar_base64_v3",
+        vfsName: "Arial.ttf",
+        family: "Arial",
+        cacheKey: "hjy_pdf_font_arial_base64_v4",
       };
 
       let pdfFontBase64Promise = null;
@@ -4516,6 +4544,10 @@
         pdf.addFileToVFS(PDF_FONT.vfsName, base64);
         pdf.addFont(PDF_FONT.vfsName, PDF_FONT.family, "normal");
         pdf.setFont(PDF_FONT.family, "normal");
+        const pdfHasR2L = typeof pdf.setR2L === "function";
+        try {
+          if (pdfHasR2L) pdf.setR2L(true);
+        } catch {}
         const xLeft = margin;
         const beforeTotal = Number(cartTotalsBefore()) || 0;
         const afterTotal = Number(cartTotals()) || 0;
@@ -4542,11 +4574,12 @@
         };
 
         const toArabicPdfText = (input) => {
-          const raw = String(input ?? "").trim();
+          const raw = toWesternDigits(String(input ?? "")).trim();
           if (!raw) return "";
           const hasArabic = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(raw);
           if (!hasArabic) return raw;
           const shaped = shapeArabicForPdf(raw);
+          if (pdfHasR2L) return shaped;
           const reversedAll = Array.from(shaped).reverse().join("");
           return reversedAll.replace(
             /[A-Za-z0-9$€£%#@+_=|<>~.,:;!?()\[\]{}\/\\-]+/g,
@@ -4914,6 +4947,26 @@
           }
           y += 4;
         }
+
+        try {
+          const full = toWesternDigits(buildInvoiceText(details));
+          const lines = String(full ?? "").split(/\r?\n/);
+          y = ensureRoom(y, 16);
+          y = writeRtl("كافة تفاصيل الطلب والملاحظات:", xRight, y, maxWidth, 12, C.noteBlue).y + 2;
+          const size = 11.2;
+          const lineH = pdfLineHeight(pdf, size);
+          for (const line of lines) {
+            const t = String(line ?? "");
+            if (!t.trim()) {
+              y = ensureRoom(y, lineH);
+              y += Math.max(2, lineH * 0.65);
+              continue;
+            }
+            y = ensureRoom(y, lineH + 2);
+            y = writeRtl(t, xRight - 4, y, maxWidth - 8, size, C.text).y;
+          }
+          y += 2;
+        } catch {}
 
         pdf.setTextColor(...C.gray);
         pdf.setFontSize(9);
@@ -5738,7 +5791,7 @@
             const code1 = idxCode1 >= 0 ? (cols[idxCode1] ?? "") : "";
             const code2 = idxCode2 >= 0 ? (cols[idxCode2] ?? "") : "";
             const about = idxAbout >= 0 ? (cols[idxAbout] ?? "") : "";
-            const rawPrice = Number(String(idxPrice >= 0 ? cols[idxPrice] : "").replace(/[^0-9.]/g, ""));
+            const rawPrice = parsePriceNumber(idxPrice >= 0 ? cols[idxPrice] : "");
             let photo = idxPhoto >= 0 ? (cols[idxPhoto] ?? "") : "";
             photo = firstUrlFromCell(photo);
             if (!/^https?:\/\//i.test(photo)) {
