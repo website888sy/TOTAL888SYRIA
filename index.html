@@ -1548,7 +1548,7 @@
   <body>
     <div class="app" id="appRoot" data-route="home">
       <div class="promo-bar" id="promoBar">
-        <div class="promo-bar-inner">خصومات حصرية: خصم 10% لـ TOTAL و خصم 10% لـ WADFOW</div>
+        <div class="promo-bar-inner">خصومات حصرية: خصم 8% لـ TOTAL و خصم 10% لـ WADFOW</div>
       </div>
       <header class="topbar">
         <div class="topbar-inner">
@@ -1828,6 +1828,21 @@
                 <input id="enableAltSectionInput" type="checkbox" />
                 <span>تفعيل ميزة اختيار البدائل الاحتياطية في حال عدم توفر المنتج الأصلي <span class="mini-note">ميزة اختيارية وليست ضرورية</span></span>
               </label>
+              <div style="display:grid;gap:6px;border:1px solid rgba(198,40,40,0.22);border-radius:12px;padding:10px;background:rgba(255,255,255,0.75)">
+                <label class="checkrow" style="margin:0">
+                  <input id="termsAgreeInput" type="checkbox" required />
+                  <span>
+                    <span style="color:#c62828;font-weight:900">حقل اجباري لإتمام الطلب</span><br />
+                    انا قرأت جميع تفاصيل الطلب والشحن والشروط والأحكام واطلعت على كافة المعلومات وأوافق على سياسة متجركم
+                  </span>
+                </label>
+                <div class="mini-note" style="line-height:1.55">
+                  - قد بشكل نادر يصلك منتج غلط "يترجع مجاناً على حسابنا".
+                </div>
+                <div class="mini-note" style="line-height:1.55">
+                  - أو تدفع ثمن منتج ما وهو غير مرسل "نحول لك المبلغ مباشرة". السبب: ضغط طلبات وهذه الأخطاء نادرة ما تحدث علماً حقوقكم محفوظة تماماً ولن يضيع لكم شيء.
+                </div>
+              </div>
               <div class="mini-note" id="altFeatureNote" style="margin-top:-4px">
                 لا يمكننا إخبار العملاء يدوياً بكل نقص ذلك يشكل صعوبة لنا , سيتم إرسال الفاتورة ولو مع نقص ويمكنكم تكميل النقص من المتاجر الآخرى , نرسل الطلب للمستودع وهو يجهز الطلب بالكامل لإرساله لكم مباشرة
               </div>
@@ -1848,7 +1863,7 @@
                 <button class="btn btn-ghost" id="downloadExcelBtn" type="button" style="flex:1;display:none">تحميل الفاتورة بصيغة الأكسل</button>
                 <button class="btn btn-ghost" id="downloadPrintPdfBtn" type="button" style="flex:1;display:none">تحميل فاتورة بصيغة PDF</button>
               </div>
-              <div class="mini-note" style="font-weight:900">
+              <div class="mini-note" style="font-weight:900;color:#c62828;font-size:13px">
                 قد يحدث بطئ مزامنة بين المستودع والموقع الإلكتروني , قد لا يتم إرسال كامل الطلب ووجود بعض النقص للمواد أو لا ترسل بسبب التأخير , لذلك سيتم إرسال الفاتورة ولو هناك نقص مع خصم قيمة المفقود
               </div>
               <div class="mini-note">سيتم تواصل معك خلال واتساب بعد إتمام الطلب قبل أن نرسل الطرد</div>
@@ -2106,6 +2121,7 @@
         allowVodafoneSwitchInput: document.getElementById("allowVodafoneSwitchInput"),
         allowFamilySwitchInput: document.getElementById("allowFamilySwitchInput"),
         fastShipEvenIfMissingInput: document.getElementById("fastShipEvenIfMissingInput"),
+        termsAgreeInput: document.getElementById("termsAgreeInput"),
         enableAltSectionInput: document.getElementById("enableAltSectionInput"),
         altFeatureNote: document.getElementById("altFeatureNote"),
         altSection: document.getElementById("altSection"),
@@ -2479,7 +2495,8 @@
         if (!Number.isFinite(raw)) return 0;
         const markup = Number(CONFIG.MARKUP_RATE) || 0;
         const d = Math.max(0, Math.min(0.95, discountForCategory(category)));
-        return raw * (1 + markup - d);
+        const before = raw * (1 + markup);
+        return before * (1 - d);
       }
 
       function formatMoney(v) {
@@ -2544,11 +2561,12 @@
         urls: [
           "https://raw.githubusercontent.com/google/fonts/main/ofl/notosansarabic/NotoSansArabic-Regular.ttf",
           "https://raw.githubusercontent.com/google/fonts/main/ofl/cairo/Cairo-Regular.ttf",
+          "https://raw.githubusercontent.com/google/fonts/main/ofl/amiri/Amiri-Regular.ttf",
           "https://db.onlinewebfonts.com/t/157ad1135ef04af4b68096015987c5eb.ttf",
         ],
-        vfsName: "Arial.ttf",
-        family: "Arial",
-        cacheKey: "hjy_pdf_font_arial_base64_v2",
+        vfsName: "NotoSansArabic.ttf",
+        family: "NotoSansArabic",
+        cacheKey: "hjy_pdf_font_noto_ar_base64_v3",
       };
 
       let pdfFontBase64Promise = null;
@@ -5436,6 +5454,8 @@
           e.preventDefault();
           if (state.cart.size === 0) return;
           if (cartTotals() < CONFIG.MIN_ORDER_TOTAL) return setCheckoutStatus(`اقل فاتورة للطلب هي ${CONFIG.MIN_ORDER_TOTAL}$`, true);
+          if (els.termsAgreeInput && !els.termsAgreeInput.checked)
+            return setCheckoutStatus("يرجى الموافقة على الشروط (حقل اجباري لإتمام الطلب).", true);
           const name = String(els.fullNameInput.value ?? "").trim();
           const gov = String(els.govInput.value ?? "").trim();
           const phone = String(els.phoneInput.value ?? "").trim();
