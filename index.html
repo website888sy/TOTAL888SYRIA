@@ -5570,10 +5570,10 @@
         }, 1800);
         try {
           await Promise.all([loadInfoPages(), loadOutOfStockSet()]);
-          const got = await fetchTextCached(CONFIG.CSV_URL, 6 * 60 * 60 * 1000);
+          const got = await fetchTextFirstAvailable([CONFIG.CSV_URL, "txt.txt"], 6 * 60 * 60 * 1000);
           if (!got) {
             els.hint.textContent = "فشل التحميل";
-            setStatus("فشل تحميل products.csv. تأكد أن الملف موجود بنفس المجلد على GitHub Pages وبنفس الاسم.", true);
+            setStatus("فشل تحميل ملف المنتجات (products.csv أو txt.txt). تأكد أن الملف موجود بنفس المجلد على GitHub Pages وبنفس الاسم.", true);
             els.grid.innerHTML = "";
             setHomeStatus("فشل تحميل المنتجات.", true);
             return;
@@ -5584,15 +5584,31 @@
 
           const headerLine = String(lines[0] ?? "").replace(/^\uFEFF/, "");
           const delimiter = detectCsvDelimiter(headerLine);
+          const headerCols = parseCsvLine(headerLine, delimiter).map((h) => String(h ?? ""));
+          const normHeader = (h) => safeLower(String(h ?? "").replace(/^\uFEFF/, "").replace(/\s+/g, ""));
+          const idxOf = (candidates) => {
+            const wanted = new Set((Array.isArray(candidates) ? candidates : []).map((x) => normHeader(x)));
+            for (let i = 0; i < headerCols.length; i++) {
+              if (wanted.has(normHeader(headerCols[i]))) return i;
+            }
+            return -1;
+          };
+          const idxCode1 = idxOf(["code1", "code 1"]);
+          const idxCode2 = idxOf(["code2", "code 2"]);
+          const idxAbout = idxOf(["about", "name", "description"]);
+          const idxPrice = idxOf(["price", "cost"]);
+          const idxPhoto = idxOf(["photo", "image", "img", "picture", "photo_url", "photo url"]);
+          if (idxCode1 === -1 && idxCode2 === -1) throw new Error("Missing CODE1/CODE2");
+          if (idxPrice === -1) throw new Error("Missing PRICE");
           const products = [];
           for (let i = 1; i < lines.length; i++) {
             const colsRaw = parseCsvLine(lines[i], delimiter);
-            const cols = normalizeCsvRow(colsRaw, delimiter, 5).map(cleanCell);
-            const code1 = cols[0] ?? "";
-            const code2 = cols[1] ?? "";
-            const about = cols[2] ?? "";
-            const rawPrice = Number(String(cols[3] ?? "").replace(/[^0-9.]/g, ""));
-            const photo = cols[4] ?? "";
+            const cols = normalizeCsvRow(colsRaw, delimiter, headerCols.length).map(cleanCell);
+            const code1 = idxCode1 >= 0 ? (cols[idxCode1] ?? "") : "";
+            const code2 = idxCode2 >= 0 ? (cols[idxCode2] ?? "") : "";
+            const about = idxAbout >= 0 ? (cols[idxAbout] ?? "") : "";
+            const rawPrice = Number(String(idxPrice >= 0 ? cols[idxPrice] : "").replace(/[^0-9.]/g, ""));
+            const photo = idxPhoto >= 0 ? (cols[idxPhoto] ?? "") : "";
 
             if (!code1 && !code2) continue;
 
@@ -5640,7 +5656,7 @@
           renderHome();
         } catch (e) {
           els.hint.textContent = "فشل التحميل";
-          setStatus("فشل تحميل products.csv. تأكد أن الملف موجود بنفس المجلد على GitHub Pages وبنفس الاسم.", true);
+          setStatus("فشل تحميل ملف المنتجات (products.csv أو txt.txt). تأكد أن الملف موجود بنفس المجلد على GitHub Pages وبنفس الاسم.", true);
           els.grid.innerHTML = "";
           setHomeStatus("فشل تحميل المنتجات.", true);
         }
