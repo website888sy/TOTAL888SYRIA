@@ -1951,7 +1951,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script>
       const CONFIG = {
         CSV_URL: "products.csv",
@@ -4514,9 +4513,6 @@
       async function buildOrderPdfBlob(details) {
         const jsPDF = window.jspdf?.jsPDF;
         if (typeof jsPDF !== "function") throw new Error("jsPDF missing");
-        try {
-          if (typeof window.html2canvas === "function") return await buildOrderPdfBlobViaHtml(details);
-        } catch {}
 
         const createdAt = Number(details.createdAt) || Date.now();
         const name = String(details.name ?? "").trim();
@@ -4544,10 +4540,6 @@
         pdf.addFileToVFS(PDF_FONT.vfsName, base64);
         pdf.addFont(PDF_FONT.vfsName, PDF_FONT.family, "normal");
         pdf.setFont(PDF_FONT.family, "normal");
-        const pdfHasR2L = typeof pdf.setR2L === "function";
-        try {
-          if (pdfHasR2L) pdf.setR2L(true);
-        } catch {}
         const xLeft = margin;
         const beforeTotal = Number(cartTotalsBefore()) || 0;
         const afterTotal = Number(cartTotals()) || 0;
@@ -4579,7 +4571,6 @@
           const hasArabic = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(raw);
           if (!hasArabic) return raw;
           const shaped = shapeArabicForPdf(raw);
-          if (pdfHasR2L) return shaped;
           const reversedAll = Array.from(shaped).reverse().join("");
           return reversedAll.replace(
             /[A-Za-z0-9$€£%#@+_=|<>~.,:;!?()\[\]{}\/\\-]+/g,
