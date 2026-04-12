@@ -1953,7 +1953,7 @@
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
     <script>
       const CONFIG = {
-        CSV_URL: "products.csv",
+        CSV_URL: "txt.txt",
         HOME_PRODUCTS_URLS: ["home.csv", "home"],
         ABOUT_URLS: ["about.csv", "about"],
         OUT_OF_STOCK_URLS_BY_CATEGORY: {
@@ -2223,11 +2223,11 @@
       async function fetchTextCached(url, maxAgeMs = 6 * 60 * 60 * 1000) {
         const u = String(url ?? "").trim();
         if (!u) return null;
-        const cacheKey = `hjy_text_cache_v1::${u}`;
+        const cacheKey = `hjy_text_cache_v2::${u}`;
         const cached = getCachedText(cacheKey, maxAgeMs);
         if (cached) return { url: u, text: cached, cached: true };
         try {
-          const res = await fetch(u, { cache: "force-cache" });
+          const res = await fetch(u, { cache: "no-store" });
           if (!res.ok) throw new Error("Fetch failed");
           const text = await res.text();
           if (!String(text ?? "").trim()) throw new Error("Empty");
@@ -5725,10 +5725,10 @@
         }, 1800);
         try {
           await Promise.all([loadInfoPages(), loadOutOfStockSet()]);
-          const got = await fetchTextFirstAvailable([CONFIG.CSV_URL, "txt.txt"], 6 * 60 * 60 * 1000);
+          const got = await fetchTextFirstAvailable([CONFIG.CSV_URL, "products.csv"], 10 * 60 * 1000);
           if (!got) {
             els.hint.textContent = "فشل التحميل";
-            setStatus("فشل تحميل ملف المنتجات (products.csv أو txt.txt). تأكد أن الملف موجود بنفس المجلد على GitHub Pages وبنفس الاسم.", true);
+            setStatus("فشل تحميل ملف المنتجات (txt.txt أو products.csv). تأكد أن الملف موجود بنفس المجلد على GitHub Pages وبنفس الاسم.", true);
             els.grid.innerHTML = "";
             setHomeStatus("فشل تحميل المنتجات.", true);
             return;
@@ -5843,7 +5843,7 @@
           renderHome();
         } catch (e) {
           els.hint.textContent = "فشل التحميل";
-          setStatus("فشل تحميل ملف المنتجات (products.csv أو txt.txt). تأكد أن الملف موجود بنفس المجلد على GitHub Pages وبنفس الاسم.", true);
+          setStatus("فشل تحميل ملف المنتجات (txt.txt أو products.csv). تأكد أن الملف موجود بنفس المجلد على GitHub Pages وبنفس الاسم.", true);
           els.grid.innerHTML = "";
           setHomeStatus("فشل تحميل المنتجات.", true);
         }
