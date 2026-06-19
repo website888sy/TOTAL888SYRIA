@@ -6,6 +6,34 @@
     <title>TOTAL SYRIA TOOLS</title>
     <link rel="icon" href="logo.png" />
     <style>
+      .form-control, .select, textarea, input[type="text"], input[type="number"], input[type="search"], .custom-select {
+        border: 1.5px solid #009688 !important;
+        transition: all 0.3s ease;
+      }
+      .form-control:focus, .select:focus, textarea:focus, input:focus, .custom-select:focus {
+        outline: none !important;
+        border-color: #00796b !important;
+        box-shadow: 0 0 8px rgba(0, 150, 136, 0.4) !important;
+      }
+      
+      .pill-new {
+        border: 2px solid #ff4d4d !important;
+        box-shadow: 0 0 8px rgba(255, 77, 77, 0.6);
+        color: #ff4d4d !important;
+        font-weight: bold;
+        animation: pulse-red 2s infinite;
+      }
+      .pill-new[aria-pressed="true"] {
+        background-color: #ff4d4d !important;
+        color: white !important;
+        box-shadow: 0 0 12px rgba(255, 77, 77, 0.8);
+      }
+      @keyframes pulse-red {
+        0% { box-shadow: 0 0 8px rgba(255, 77, 77, 0.6); }
+        50% { box-shadow: 0 0 14px rgba(255, 77, 77, 0.9); }
+        100% { box-shadow: 0 0 8px rgba(255, 77, 77, 0.6); }
+      }
+      
       :root {
         color-scheme: light;
         --bg: #ffffff;
@@ -1595,8 +1623,9 @@
             <div class="pillbar categories-panel" id="categoriesPanel" role="group" aria-label="التصنيفات" hidden>
               <button class="pill" type="button" data-category="HOME" aria-pressed="false">الصفحة الرئيسية</button>
               <button class="pill" type="button" data-category="ALL" aria-pressed="true">الكل</button>
-              <button class="pill" type="button" data-category="FAVORITES" aria-pressed="false">المفضلة</button>
-              <button class="pill" type="button" data-category="OUT_OF_STOCK" aria-pressed="false">منتهي الكمية</button>
+                <button class="pill" type="button" data-category="FAVORITES" aria-pressed="false">المفضلة</button>
+                <button class="pill pill-new" type="button" data-category="NEW_ARRIVALS" aria-pressed="false">الرائج وصلت حديثاً</button>
+                <button class="pill" type="button" data-category="OUT_OF_STOCK" aria-pressed="false">منتهي الكمية</button>
               <button class="pill" type="button" data-category="WADFOW" aria-pressed="false">WADFOW</button>
               <button class="pill" type="button" data-category="TOTAL" aria-pressed="false">TOTAL</button>
               <button class="pill" type="button" data-category="WADFOW_TOTAL" aria-pressed="false">WADFOW - TOTAL</button>
@@ -1951,7 +1980,8 @@
     <script>
       const CONFIG = {
         CSV_URL: "products.csv",
-        HOME_PRODUCTS_URLS: ["home.csv", "home"],
+        HOME_PRODUCTS_URLS: ["home.txt"],
+        NEW_PRODUCTS_URLS: ["new-products.txt"],
         ABOUT_URLS: ["about.csv", "about"],
         ITEMS_PER_PAGE: 20,
         MARKUP_RATE: 0.08,
@@ -3202,6 +3232,7 @@
         const c = String(category ?? "").trim() || "ALL";
         if (c === "ALL") return "الكل";
         if (c === "FAVORITES") return "المفضلة";
+        if (c === "NEW_ARRIVALS") return "الرائج وصلت حديثاً";
         if (c === "OUT_OF_STOCK") return "منتهي الكمية";
         if (c === "WADFOW") return "WADFOW";
         if (c === "TOTAL") return "TOTAL";
@@ -3257,6 +3288,8 @@
 
         if (state.category === "FAVORITES") {
           list = list.filter((p) => state.favorites.has(p.key));
+        } else if (state.category === "NEW_ARRIVALS") {
+          list = list.filter((p) => state.newProductKeys && state.newProductKeys.has(safeLower(p.key)));
         } else if (state.category === "OUT_OF_STOCK") {
           list = list.filter((p) => p.isOutOfStock);
         } else if (state.category === "WADFOW_TOTAL") {
@@ -5808,6 +5841,7 @@
           setStatus("");
           loadCart();
           renderCart();
+          await loadNewProducts();
           render();
           await loadHomeProducts();
           renderHome();
@@ -5825,26 +5859,20 @@
         const res = await fetchTextFirstAvailable(CONFIG.HOME_PRODUCTS_URLS);
         if (!res) {
           state.homeProducts = [];
-          setHomeStatus("", false); // إخفاء رسالة الخطأ
-          document.querySelector(".home-section").style.display = "none"; // إخفاء قسم الرئيسية إذا لم يوجد ملف
+          setHomeStatus("", false);
+          document.querySelector(".home-section").style.display = "none";
           return;
         }
-        const table = parseCsvText(res.text);
-        const idx = table.headers.findIndex((h) => safeLower(h).includes("code"));
-        if (idx < 0) {
-          state.homeProducts = [];
-          setHomeStatus("home.csv يجب أن يحتوي على عمود اسمه CODE.", false);
-          return;
-        }
-        const wanted = [];
-        for (const row of table.rows) {
-          const code = String(row[idx] ?? "").trim();
-          if (!code) continue;
-          wanted.push(code);
-        }
+        
+        // Split by lines and filter empty ones
+        const wanted = res.text.split('\n')
+                       .map(line => line.trim())
+                       .filter(line => line.length > 0);
+                       
         if (wanted.length === 0) {
           state.homeProducts = [];
-          setHomeStatus("home.csv فارغ.", false);
+          setHomeStatus("", false);
+          document.querySelector(".home-section").style.display = "none";
           return;
         }
         const seen = new Set();
@@ -5858,10 +5886,25 @@
         }
         state.homeProducts = picked;
         if (picked.length === 0) {
-          setHomeStatus("لم يتم العثور على أكواد home.csv داخل products.csv.", false);
+          setHomeStatus("", false);
+          document.querySelector(".home-section").style.display = "none";
           return;
         }
         setHomeStatus("", false);
+      }
+
+      async function loadNewProducts() {
+        state.newProductKeys = new Set();
+        const res = await fetchTextFirstAvailable(CONFIG.NEW_PRODUCTS_URLS);
+        if (!res) return;
+        
+        const codes = res.text.split('\n')
+                      .map(line => line.trim())
+                      .filter(line => line.length > 0);
+                      
+        for (const c of codes) {
+            state.newProductKeys.add(safeLower(c));
+        }
       }
 
       function renderHome() {
