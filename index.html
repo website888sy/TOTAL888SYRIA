@@ -8,20 +8,11 @@
     <style>
       .pill-new {
         border: 2px solid #ff4d4d !important;
-        box-shadow: 0 0 8px rgba(255, 77, 77, 0.6);
         color: #ff4d4d !important;
-        font-weight: bold;
-        animation: pulse-red 2s infinite;
       }
       .pill-new[aria-pressed="true"] {
         background-color: #ff4d4d !important;
         color: white !important;
-        box-shadow: 0 0 12px rgba(255, 77, 77, 0.8);
-      }
-      @keyframes pulse-red {
-        0% { box-shadow: 0 0 8px rgba(255, 77, 77, 0.6); }
-        50% { box-shadow: 0 0 14px rgba(255, 77, 77, 0.9); }
-        100% { box-shadow: 0 0 8px rgba(255, 77, 77, 0.6); }
       }
 
       :root {
@@ -1974,6 +1965,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script>
       const CONFIG = {
         CSV_URL: "products.csv",
@@ -2321,41 +2313,35 @@
       }
 
       async function loadInfoPages() {
-        const res = await fetchTextFirstAvailable(CONFIG.ABOUT_URLS);
         state.infoPages.clear();
-        const defaults = new Map([
-          ["about_us", { title: "من نحن", text: "سيتم عرض النص تلقائياً من ملف about.csv عند رفعه على GitHub." }],
-          ["location", { title: "موقعنا", text: "سيتم عرض النص تلقائياً من ملف about.csv عند رفعه على GitHub." }],
-          ["faq", { title: "أشيع الأسئلة", text: "سيتم عرض النص تلقائياً من ملف about.csv عند رفعه على GitHub." }],
-          ["shipping", { title: "تفاصيل الشحن", text: "سيتم عرض النص تلقائياً من ملف about.csv عند رفعه على GitHub." }],
-          ["how_to_order", { title: "كيفية الطلب", text: "سيتم عرض النص تلقائياً من ملف about.csv عند رفعه على GitHub." }],
-          ["developer", { title: "المطور", text: "سيتم عرض النص تلقائياً من ملف about.csv عند رفعه على GitHub." }],
-          ["masarat_branches", { title: "فروع مسارات", text: "سيتم عرض النص تلقائياً من ملف about.csv عند رفعه على GitHub." }],
-          ["qadmous_branches", { title: "فروع القدموس", text: "سيتم عرض النص تلقائياً من ملف about.csv عند رفعه على GitHub." }],
-        ]);
-        for (const [k, v] of defaults.entries()) state.infoPages.set(k, v);
-        if (!res) return;
-        const table = parseCsvText(res.text);
-        if (table.headers.length === 0 || table.rows.length === 0) return;
-        const row = table.rows[0] ?? [];
-        const byHeader = new Map();
-        for (let i = 0; i < table.headers.length; i++) {
-          byHeader.set(normalizeInfoHeader(table.headers[i]), String(row[i] ?? "").trim());
-        }
-        const map = [
-          ["about_us", "من نحن"],
-          ["location", "موقعنا"],
-          ["faq", "أشيع الأسئلة"],
-          ["shipping", "تفاصيل الشحن"],
-          ["how_to_order", "كيفية الطلب"],
-          ["developer", "المطور"],
-          ["masarat_branches", "فروع مسارات"],
-          ["qadmous_branches", "فروع القدموس"],
+        const pages = [
+          { key: "about_us", title: "من نحن", file: "about_us.txt" },
+          { key: "location", title: "موقعنا", file: "location.txt" },
+          { key: "faq", title: "أشيع الأسئلة", file: "faq.txt" },
+          { key: "shipping", title: "تفاصيل الشحن", file: "shipping.txt" },
+          { key: "how_to_order", title: "كيفية الطلب", file: "how_to_order.txt" },
+          { key: "developer", title: "المطور", file: "developer.txt" },
+          { key: "masarat_branches", title: "فروع مسارات", file: "masarat_branches.txt" },
+          { key: "qadmous_branches", title: "فروع القدموس", file: "qadmous_branches.txt" },
         ];
-        for (const [key, header] of map) {
-          const text = byHeader.get(header);
-          if (typeof text === "string" && text.trim().length > 0) state.infoPages.set(key, { title: header, text });
+        
+        for (const p of pages) {
+          state.infoPages.set(p.key, { title: p.title, text: `سيتم عرض النص تلقائياً من ملف ${p.file} عند رفعه على GitHub.` });
         }
+
+        await Promise.all(pages.map(async (p) => {
+          try {
+            const res = await fetch(p.file + "?t=" + Date.now());
+            if (res.ok) {
+              const text = await res.text();
+              if (text && text.trim().length > 0) {
+                state.infoPages.set(p.key, { title: p.title, text: text.trim() });
+              }
+            }
+          } catch (err) {
+            // Ignore fetch errors, keep default text
+          }
+        }));
       }
 
       async function loadOutOfStockSet() {
@@ -2519,6 +2505,16 @@
         if (!Number.isFinite(raw)) return 0;
         // السعر النهائي المبيع = السعر الأصلي + 8% فقط (بدون خصم)
         return raw * 1.08;
+      }
+
+      function renderPricesHtml(p) {
+        if (p.rawPrice === 0) {
+          return `<span class="price-now">غير متوفر</span>`;
+        }
+        return `
+          <span class="price-now">$${formatMoney(p.priceAfter)}</span>
+          <span class="price-old" style="text-decoration: line-through; color: #999; font-size: 0.85em; margin-right: 8px;">$${formatMoney(p.priceBefore)}</span>
+        `;
       }
 
       function formatMoney(v) {
@@ -3321,10 +3317,9 @@
         if (state.sortMode === "PRICE_ASC") list = [...list].sort((a, b) => (Number(a.priceAfter) || 0) - (Number(b.priceAfter) || 0));
         if (state.sortMode === "PRICE_DESC") list = [...list].sort((a, b) => (Number(b.priceAfter) || 0) - (Number(a.priceAfter) || 0));
 
-        if (qTrimmed.length > 0) {
-          const depr = (p) => (p.category === "UNAVAILABLE" || p.isOutOfStock || p.category === "UNCATEGORIZED" ? 1 : 0);
-          list = [...list].sort((a, b) => depr(a) - depr(b));
-        }
+        // دوماً المنتجات المنتهية الكمية أو غير المتوفرة تكون في النهاية
+        const depr = (p) => (p.category === "UNAVAILABLE" || p.isOutOfStock ? 1 : 0);
+        list = [...list].sort((a, b) => depr(a) - depr(b));
 
         state.filteredProducts = list;
         state.page = 1;
@@ -3419,8 +3414,7 @@
                 </div>
                 <div class="card-body">
                   <div class="prices">
-                    <span class="price-now">$${formatMoney(p.priceAfter)}</span>
-                    <span class="price-old" style="text-decoration: line-through; color: #999; font-size: 0.85em; margin-right: 8px;">$${formatMoney(calcPriceBefore(p.rawPrice))}</span>
+                    ${renderPricesHtml(p)}
                   </div>
                   <div class="actions">${addButton}</div>
                 </div>
@@ -3453,9 +3447,7 @@
                   <p class="desc" data-desc="${escapeHtmlAttr(p.key)}">${escapeHtml(p.about)}</p>
                   ${aboutLong ? `<button class="readmore" type="button" data-more="${escapeHtmlAttr(p.key)}">قراءة المزيد...</button>` : ""}
                   <div class="prices">
-                    <span class="price-now">$${formatMoney(p.priceAfter)}</span>
-                    <span class="price-old" style="text-decoration: line-through; color: #999; font-size: 0.85em; margin-right: 8px;">$${formatMoney(calcPriceBefore(p.rawPrice))}</span>
-                    <!-- السعر القديم مخفي -->
+                    ${renderPricesHtml(p)}
                   </div>
                   <div class="actions">${addButton}</div>
                 </div>
@@ -3762,8 +3754,7 @@
                 </div>
               </div>
               <div class="prices">
-                <span class="price-now">$${formatMoney(p.priceAfter)}</span>
-                <!-- السعر القديم مخفي -->
+                ${renderPricesHtml(p)}
               </div>
               <div class="desc is-expanded" style="display:block">${escapeHtml(p.about)}</div>
               <div class="actions">${addButton}</div>
@@ -3911,7 +3902,7 @@
                     </div>
                   </div>
                   <div class="prices">
-                    <span class="price-now">$${formatMoney(p.priceAfter)}</span>
+                    ${renderPricesHtml(p)}
                   </div>
                   <div class="actions" style="display:flex;gap:10px;flex-wrap:wrap">
                     <button class="btn btn-ghost" type="button" data-product="${escapeHtmlAttr(p.key)}" style="flex:1">تفاصيل</button>
@@ -4360,7 +4351,7 @@
       }
 
       async function downloadInvoicePdf(details) {
-        const blob = await buildOrderPdfBlob(details);
+        const blob = await buildOrderPdfBlobViaHtml(details);
         const safeName = sanitizeFilename(details?.name || "order");
         downloadBlob(`${safeName}.pdf`, blob);
       }
@@ -5664,7 +5655,7 @@
             try {
               const safeName = sanitizeFilename(name || "order");
               const filename = `${safeName}.pdf`;
-              const pdfBlob = await buildOrderPdfBlob(invoiceDetails);
+              const pdfBlob = await buildOrderPdfBlobViaHtml(invoiceDetails);
               await sendPdfToTelegram(pdfBlob, filename);
             } catch {}
             els.confirmOrderBtn.textContent = "تم إرسال الطلب";
@@ -5881,6 +5872,11 @@
           const p = state.allProducts.find((x) => safeLower(x.key) === key);
           if (p) picked.push(p);
         }
+        
+        // دوماً المنتجات المنتهية الكمية أو غير المتوفرة تكون في النهاية
+        const depr = (p) => (p.category === "UNAVAILABLE" || p.isOutOfStock ? 1 : 0);
+        picked.sort((a, b) => depr(a) - depr(b));
+        
         state.homeProducts = picked;
         if (picked.length === 0) {
           setHomeStatus("", false);
@@ -5944,7 +5940,7 @@
                 </div>
                 <div class="card-body">
                   <div class="prices">
-                    <span class="price-now">$${formatMoney(p.priceAfter)}</span>
+                    ${renderPricesHtml(p)}
                   </div>
                   <div class="actions">${addButton}</div>
                 </div>
@@ -5977,8 +5973,7 @@
                   <p class="desc" data-desc="${escapeHtmlAttr(p.key)}">${escapeHtml(p.about)}</p>
                   ${aboutLong ? `<button class="readmore" type="button" data-more="${escapeHtmlAttr(p.key)}">قراءة المزيد...</button>` : ""}
                   <div class="prices">
-                    <span class="price-now">$${formatMoney(p.priceAfter)}</span>
-                    <!-- السعر القديم مخفي -->
+                    ${renderPricesHtml(p)}
                   </div>
                   <div class="actions">${addButton}</div>
                 </div>
