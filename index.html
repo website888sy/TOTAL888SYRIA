@@ -1596,11 +1596,11 @@
               <button class="pill" type="button" data-category="HOME" aria-pressed="false">الصفحة الرئيسية</button>
               <button class="pill" type="button" data-category="ALL" aria-pressed="true">الكل</button>
               <button class="pill" type="button" data-category="FAVORITES" aria-pressed="false">المفضلة</button>
-              <button class="pill" type="button" data-category="OUT_OF_STOCK" aria-pressed="false">منتهي</button>
+              <button class="pill" type="button" data-category="OUT_OF_STOCK" aria-pressed="false">منتهي الكمية</button>
               <button class="pill" type="button" data-category="WADFOW" aria-pressed="false">WADFOW</button>
               <button class="pill" type="button" data-category="TOTAL" aria-pressed="false">TOTAL</button>
               <button class="pill" type="button" data-category="WADFOW_TOTAL" aria-pressed="false">WADFOW - TOTAL</button>
-              <button class="pill" type="button" data-category="UNAVAILABLE" aria-pressed="false">الغير متوفر</button>
+              <button class="pill" type="button" data-category="UNAVAILABLE" aria-pressed="false">غير متوفر</button>
               <button class="pill" type="button" data-category="UNCATEGORIZED" aria-pressed="false">غير مصنف</button>
               <button class="pill" type="button" data-category="DRILLS" aria-pressed="false">مثاقب</button>
               <button class="pill" type="button" data-category="GRINDING" aria-pressed="false">جلخ</button>
@@ -3202,11 +3202,11 @@
         const c = String(category ?? "").trim() || "ALL";
         if (c === "ALL") return "الكل";
         if (c === "FAVORITES") return "المفضلة";
-        if (c === "OUT_OF_STOCK") return "منتهي";
+        if (c === "OUT_OF_STOCK") return "منتهي الكمية";
         if (c === "WADFOW") return "WADFOW";
         if (c === "TOTAL") return "TOTAL";
         if (c === "WADFOW_TOTAL") return "WADFOW - TOTAL";
-        if (c === "UNAVAILABLE") return "الغير متوفر";
+        if (c === "UNAVAILABLE") return "غير متوفر";
         if (c === "UNCATEGORIZED") return "غير مصنف";
         if (c === "DRILLS") return "مثاقب";
         if (c === "GRINDING") return "جلخ";
@@ -3367,7 +3367,7 @@
           }" aria-label="المفضلة">${favOn ? "♥" : "♡"}</button>`;
           const addButton =
             p.isOutOfStock
-              ? `<button class="btn btn-disabled" type="button" disabled>منتهي</button>`
+              ? `<button class="btn btn-disabled" type="button" disabled>منتهي الكمية</button>`
               : p.category === "UNAVAILABLE"
               ? `<button class="btn btn-disabled" type="button" disabled>غير متوفر</button>`
               : `<button class="btn ${isWadfow ? "btn-wadfow" : "btn-primary"}" type="button" data-add="${escapeHtmlAttr(
@@ -3705,7 +3705,7 @@
         }" aria-label="المفضلة">${favOn ? "♥" : "♡"}</button>`;
         const addButton =
           p.isOutOfStock
-            ? `<button class="btn btn-disabled" type="button" disabled>منتهي</button>`
+            ? `<button class="btn btn-disabled" type="button" disabled>منتهي الكمية</button>`
             : p.category === "UNAVAILABLE"
             ? `<button class="btn btn-disabled" type="button" disabled>غير متوفر</button>`
             : `<button class="btn ${isWadfow ? "btn-wadfow" : "btn-primary"}" type="button" data-add="${escapeHtmlAttr(
@@ -5770,7 +5770,7 @@
 
             if (!code) continue;
 
-            const category = getCategoryFromAbout(about);
+            let category = getCategoryFromAbout(about);
             const extraCategories = getExtraCategoriesFromAbout(about);
             const priceBefore = calcPriceBefore(rawPrice);
             const priceAfter = calcPriceAfter(rawPrice, category);
@@ -5779,6 +5779,11 @@
             const search = safeLower(`${code} ${about}`);
             
             const isOutOfStock = inStockRaw === "no" || inStockRaw === "false" || inStockRaw === "0";
+
+            // إذا كان السعر 0 نصنفه كـ غير متوفر
+            if (rawPrice === 0) {
+              category = "UNAVAILABLE";
+            }
 
             products.push({
               key,
@@ -5820,7 +5825,8 @@
         const res = await fetchTextFirstAvailable(CONFIG.HOME_PRODUCTS_URLS);
         if (!res) {
           state.homeProducts = [];
-          setHomeStatus("تعذر العثور على home.csv بجانب index.html.", false);
+          setHomeStatus("", false); // إخفاء رسالة الخطأ
+          document.querySelector(".home-section").style.display = "none"; // إخفاء قسم الرئيسية إذا لم يوجد ملف
           return;
         }
         const table = parseCsvText(res.text);
@@ -5876,7 +5882,7 @@
           }" aria-label="المفضلة">${favOn ? "♥" : "♡"}</button>`;
           const addButton =
             p.isOutOfStock
-              ? `<button class="btn btn-disabled" type="button" disabled>منتهي</button>`
+              ? `<button class="btn btn-disabled" type="button" disabled>منتهي الكمية</button>`
               : p.category === "UNAVAILABLE"
               ? `<button class="btn btn-disabled" type="button" disabled>غير متوفر</button>`
               : `<button class="btn ${isWadfow ? "btn-wadfow" : "btn-primary"}" type="button" data-add="${escapeHtmlAttr(
