@@ -1584,15 +1584,10 @@
         }
       }
 
-      .app[data-route="home"] #promoBar {
-        display: block;
-      }
-
       .app[data-route="home"] #brandBlock {
         display: flex;
       }
 
-      .app:not([data-route="home"]) #promoBar,
       .app:not([data-route="home"]) #brandBlock {
         display: none;
       }
@@ -1623,6 +1618,12 @@
   <body>
     <div class="app" id="appRoot" data-route="home">
       <header class="topbar">
+        <div class="promo-bar" id="promoBar">
+          <div class="promo-bar-inner">
+            <span>🎁 اطلب أكثر من 100$ واحصل على هدايا مجانية مفاجئة مع كل طلب</span>
+          </div>
+        </div>
+
         <div class="topbar-inner">
           <div class="brand" id="brandBlock">
             <div class="logo" aria-hidden="true">
@@ -2037,7 +2038,7 @@
         NEW_PRODUCTS_URLS: ["new-products.txt"],
         ABOUT_URLS: ["about.csv", "about"],
         ITEMS_PER_PAGE: 20,
-        MARKUP_RATE: 0.08,
+        MARKUP_RATE: 0.02,
         DISCOUNT_TOTAL: 0.08,
         DISCOUNT_WADFOW: 0.1,
         SEARCH_MIN_CHARS: 3,
@@ -2553,8 +2554,8 @@
 
       function calcPriceBefore(rawPrice) {
         if (!Number.isFinite(rawPrice)) return 0;
-        // السعر الوهمي (المشطوب) = السعر المبيع (السعر الأساسي + 8%) + 15%
-        const sellPrice = rawPrice * 1.08;
+        // السعر الوهمي (المشطوب) = السعر المبيع (السعر الأساسي + 2%) + 15%
+        const sellPrice = rawPrice * 1.02;
         return sellPrice * 1.15;
       }
 
@@ -2567,8 +2568,8 @@
       function calcPriceAfter(rawPrice, category) {
         const raw = Number(rawPrice);
         if (!Number.isFinite(raw)) return 0;
-        // السعر النهائي المبيع = السعر الأصلي + 8% فقط (بدون خصم)
-        return raw * 1.08;
+        // السعر النهائي المبيع = السعر الأصلي + 2% فقط (بدون خصم)
+        return raw * 1.02;
       }
 
       function renderPricesHtml(p) {
