@@ -2043,6 +2043,10 @@
         DISCOUNT_WADFOW: 0.1,
         SEARCH_MIN_CHARS: 3,
         MIN_ORDER_TOTAL: 25,
+        // حالة التوفر تُسحب مباشرة من المتجر الأصلي (هاوارا ستور)
+        // يعيد كائن JSON بالشكل: { "SKU": true/false, ... }
+        LIVE_STOCK_URL: "https://hawarastore.com/wp-json/total-stock/v1/all",
+        LIVE_STOCK_REFRESH_MS: 5 * 60 * 1000,
         TELEGRAM_BOT_TOKEN: "8539011678:AAEcx0KoMJPO_biAaKyPA8SgsQZAe0gC3S4",
         TELEGRAM_CHAT_ID: "2067991553",
       };
@@ -5913,6 +5917,7 @@
           render();
           await loadHomeProducts();
           renderHome();
+          startLiveStockSync();
         } catch (e) {
           els.hint.textContent = "فشل التحميل";
           setStatus("فشل تحميل ملف المنتجات (txt.txt أو products.csv). تأكد أن الملف موجود بنفس المجلد على GitHub Pages وبنفس الاسم.", true);
@@ -5977,6 +5982,87 @@
                       
         for (const c of codes) {
             state.newProductKeys.add(safeLower(c));
+        }
+      }
+
+      // ===== حالة التوفر المباشرة من المتجر الأصلي =====
+      // تطبيع الكود: أحرف كبيرة + حذف المسافات (ليتوافق مع SKU في ووكومرس)
+      function normalizeStockSku(v) {
+        return String(v ?? "").toUpperCase().replace(/\s+/g, "").trim();
+      }
+
+      let liveStockTimer = null;
+      let liveStockFailures = 0;
+      let liveStockApplied = false;
+
+      async function syncLiveStock() {
+        const url = CONFIG.LIVE_STOCK_URL;
+        if (!url || !Array.isArray(state.allProducts) || state.allProducts.length === 0) return;
+        try {
+          const res = await fetch(`${url}${url.includes("?") ? "&" : "?"}_=${Date.now()}`, { cache: "no-store" });
+          if (!res.ok) throw new Error(String(res.status));
+          const data = await res.json();
+          const raw =
+            data && typeof data === "object" && data.items && typeof data.items === "object" ? data.items : data;
+          if (!raw || typeof raw !== "object") throw new Error("bad payload");
+
+          const map = new Map();
+          for (const [k, v] of Object.entries(raw)) {
+            let inStock = null;
+            if (typeof v === "boolean") inStock = v;
+            else if (typeof v === "number") inStock = v !== 0;
+            else if (v && typeof v === "object") {
+              const x = v.in_stock ?? v.is_in_stock ?? v.available;
+              if (typeof x === "boolean") inStock = x;
+            }
+            if (typeof inStock === "boolean") map.set(normalizeStockSku(k), inStock);
+          }
+          if (map.size === 0) throw new Error("empty map");
+
+          liveStockFailures = 0;
+          let changed = false;
+          for (const p of state.allProducts) {
+            const v = map.get(normalizeStockSku(p.key));
+            if (typeof v !== "boolean") continue;
+            const oos = !v;
+            if (p.isOutOfStock !== oos) {
+              p.isOutOfStock = oos;
+              changed = true;
+            }
+          }
+          if (!changed && liveStockApplied) return;
+          liveStockApplied = true;
+
+          const savedPage = state.page;
+          applyFilters();
+          state.page = Math.min(savedPage, Math.max(1, Math.ceil(state.filteredProducts.length / CONFIG.ITEMS_PER_PAGE)));
+          render();
+
+          if (Array.isArray(state.homeProducts) && state.homeProducts.length > 0) {
+            const depr = (p) => (p.category === "UNAVAILABLE" || p.isOutOfStock ? 1 : 0);
+            state.homeProducts = [...state.homeProducts].sort((a, b) => depr(a) - depr(b));
+            renderHome();
+          }
+
+          const h = String(location.hash ?? "");
+          if (h.startsWith("#product=")) {
+            showProductView(decodeURIComponent(h.slice("#product=".length)));
+          }
+          if (typeof renderCart === "function") renderCart();
+        } catch (e) {
+          liveStockFailures += 1;
+          if (liveStockFailures >= 2 && liveStockTimer) {
+            clearInterval(liveStockTimer);
+            liveStockTimer = null;
+          }
+        }
+      }
+
+      function startLiveStockSync() {
+        syncLiveStock();
+        if (liveStockTimer) return;
+        if (Number(CONFIG.LIVE_STOCK_REFRESH_MS) > 0) {
+          liveStockTimer = setInterval(syncLiveStock, Number(CONFIG.LIVE_STOCK_REFRESH_MS));
         }
       }
 
