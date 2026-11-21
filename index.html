@@ -5933,7 +5933,7 @@
       async function loadHomeProducts() {
         state.homeProducts = [];
         setHomeStatus("جاري تجهيز الصفحة الرئيسية...", false);
-        const res = await fetchTextFirstAvailable(CONFIG.HOME_PRODUCTS_URLS);
+        const res = await fetchTextFirstAvailable(CONFIG.HOME_PRODUCTS_URLS, 10 * 60 * 1000);
         if (!res) {
           state.homeProducts = [];
           setHomeStatus("", false);
@@ -5977,7 +5977,7 @@
 
       async function loadNewProducts() {
         state.newProductKeys = new Set();
-        const res = await fetchTextFirstAvailable(CONFIG.NEW_PRODUCTS_URLS);
+        const res = await fetchTextFirstAvailable(CONFIG.NEW_PRODUCTS_URLS, 10 * 60 * 1000);
         if (!res) return;
         
         const codes = res.text.split('\n')
