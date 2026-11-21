@@ -6129,9 +6129,9 @@
         if (typeof renderCart === "function") renderCart();
       }
 
-      async function syncLiveStock() {
+      async function syncLiveStock(force = false) {
         if (liveStockBusy || !Array.isArray(state.allProducts) || state.allProducts.length === 0) return;
-        if (typeof document !== "undefined" && document.hidden) return;
+        if (!force && typeof document !== "undefined" && document.hidden) return;
         liveStockBusy = true;
         try {
           // 1) رابط مختصر اختياري (إن وُجد يعيد كل الحالة بطلب واحد)
@@ -6186,9 +6186,20 @@
 
         const ttl = Number(CONFIG.LIVE_STOCK_REFRESH_MS) || 0;
         const fresh = cached && cached.t && Date.now() - Number(cached.t) < ttl;
-        if (!fresh) syncLiveStock();
+        if (!fresh) syncLiveStock(true);
+
+        if (typeof document !== "undefined" && !startLiveStockSync._visHooked) {
+          startLiveStockSync._visHooked = true;
+          document.addEventListener("visibilitychange", () => {
+            if (document.hidden) return;
+            const c = readStockCache();
+            const t = Number(CONFIG.LIVE_STOCK_REFRESH_MS) || 0;
+            if (!c || !c.t || Date.now() - Number(c.t) >= t) syncLiveStock(true);
+          });
+        }
+
         if (liveStockTimer || ttl <= 0) return;
-        liveStockTimer = setInterval(syncLiveStock, ttl);
+        liveStockTimer = setInterval(() => syncLiveStock(false), ttl);
       }
 
       function renderHome() {
