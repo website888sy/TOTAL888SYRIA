@@ -2043,10 +2043,14 @@
         DISCOUNT_WADFOW: 0.1,
         SEARCH_MIN_CHARS: 3,
         MIN_ORDER_TOTAL: 25,
-        // حالة التوفر تُسحب مباشرة من المتجر الأصلي (هاوارا ستور)
-        // يعيد كائن JSON بالشكل: { "SKU": true/false, ... }
-        LIVE_STOCK_URL: "https://hawarastore.com/wp-json/total-stock/v1/all",
-        LIVE_STOCK_REFRESH_MS: 5 * 60 * 1000,
+        // ===== حالة التوفر المباشرة من المتجر الأصلي (هاوارا ستور) =====
+        // تُقرأ عبر JSONP من واجهة المتجر العامة، بدون أي وسيط وبدون تخزين على GitHub
+        STORE_PRODUCTS_URL: "https://hawarastore.com/wp-json/wc/store/v1/products",
+        LIVE_STOCK_CONCURRENCY: 3, // عدد الصفحات المحمّلة بالتوازي
+        LIVE_STOCK_MAX_PAGES: 80, // حد أقصى لصفحات المتجر (كل صفحة 100 مادة)
+        LIVE_STOCK_REFRESH_MS: 15 * 60 * 1000, // مدة صلاحية الكاش المحلي
+        // اختياري: رابط مختصر يعيد كل الحالة بطلب واحد (إن لم يوجد يُستخدم JSONP)
+        LIVE_STOCK_URL: "",
         TELEGRAM_BOT_TOKEN: "8539011678:AAEcx0KoMJPO_biAaKyPA8SgsQZAe0gC3S4",
         TELEGRAM_CHAT_ID: "2067991553",
       };
@@ -5985,85 +5989,206 @@
         }
       }
 
-      // ===== حالة التوفر المباشرة من المتجر الأصلي =====
-      // تطبيع الكود: أحرف كبيرة + حذف المسافات (ليتوافق مع SKU في ووكومرس)
+      // ===== حالة التوفر المباشرة من المتجر الأصلي (بدون أي وسيط) =====
+      // نستخدم JSONP: ووردبريس يدعم ?_jsonp=callback على كل مسارات REST،
+      // فيمكن قراءة البيانات من hawarastore.com داخل الموقع بدون الحاجة إلى CORS.
       function normalizeStockSku(v) {
         return String(v ?? "").toUpperCase().replace(/\s+/g, "").trim();
       }
 
       let liveStockTimer = null;
+      let liveStockBusy = false;
       let liveStockFailures = 0;
-      let liveStockApplied = false;
+      let jsonpSeq = 0;
+      const LIVE_STOCK_CACHE_KEY = "total_stock_cache_v1";
+
+      function readStockCache() {
+        try {
+          const raw = localStorage.getItem(LIVE_STOCK_CACHE_KEY);
+          if (!raw) return null;
+          const obj = JSON.parse(raw);
+          if (!obj || typeof obj !== "object" || !obj.map) return null;
+          return obj;
+        } catch {
+          return null;
+        }
+      }
+
+      function writeStockCache(map) {
+        try {
+          localStorage.setItem(LIVE_STOCK_CACHE_KEY, JSON.stringify({ t: Date.now(), map }));
+        } catch {}
+      }
+
+      // طلب صفحة واحدة من واجهة المتجر عبر JSONP (لا يحتاج CORS)
+      function fetchStorePageJsonp(page) {
+        return new Promise((resolve) => {
+          const base = String(CONFIG.STORE_PRODUCTS_URL || "").replace(/[?&]+$/, "");
+          if (!base) return resolve(null);
+          const cb = `__totalStockCb_${Date.now()}_${++jsonpSeq}`;
+          const url =
+            `${base}?per_page=100&page=${page}` +
+            `&_fields=sku,is_in_stock&_jsonp=${cb}&_=${Date.now()}`;
+          const script = document.createElement("script");
+          let done = false;
+          const finish = (value) => {
+            if (done) return;
+            done = true;
+            try {
+              delete window[cb];
+            } catch {
+              window[cb] = undefined;
+            }
+            script.remove();
+            resolve(value);
+          };
+          window[cb] = (data) => finish(Array.isArray(data) ? data : null);
+          script.onerror = () => finish(null);
+          script.async = true;
+          script.src = url;
+          document.head.appendChild(script);
+          setTimeout(() => finish(null), 20000);
+        });
+      }
+
+      // يجمع خريطة { SKU: متوفر؟ } لكل مواد المتجر
+      async function fetchStoreStockMap(onProgress) {
+        const map = {};
+        const perBatch = Math.max(1, Number(CONFIG.LIVE_STOCK_CONCURRENCY) || 4);
+        const maxPages = Math.max(1, Number(CONFIG.LIVE_STOCK_MAX_PAGES) || 80);
+        let page = 1;
+        let stop = false;
+
+        while (!stop && page <= maxPages) {
+          const pages = [];
+          for (let i = 0; i < perBatch && page + i <= maxPages; i++) pages.push(page + i);
+          const results = await Promise.all(pages.map((p) => fetchStorePageJsonp(p)));
+
+          for (let i = 0; i < results.length; i++) {
+            const rows = results[i];
+            if (!Array.isArray(rows)) {
+              // فشل تحميل صفحة: نوقف ونبقي الحالة السابقة
+              return null;
+            }
+            if (rows.length === 0) {
+              stop = true;
+              continue;
+            }
+            if (rows.length < 100) stop = true;
+            for (const row of rows) {
+              if (!row || typeof row !== "object") continue;
+              const sku = normalizeStockSku(row.sku);
+              if (sku) map[sku] = row.is_in_stock !== false;
+            }
+          }
+          page += perBatch;
+          // تحديث تدريجي للواجهة أثناء التحميل (كل 12 صفحة)
+          if (typeof onProgress === "function" && page % 12 === 1) {
+            try {
+              onProgress(map);
+            } catch {}
+          }
+        }
+        return Object.keys(map).length > 0 ? map : null;
+      }
+
+      // يطبّق الخريطة على المنتجات ويعيد رسم الواجهة إذا تغيّر شيء
+      function applyStockMap(map, opts = {}) {
+        let changed = false;
+        for (const p of state.allProducts || []) {
+          const v = map[normalizeStockSku(p.key)];
+          if (typeof v !== "boolean") continue;
+          const oos = !v;
+          if (p.isOutOfStock !== oos) {
+            p.isOutOfStock = oos;
+            changed = true;
+          }
+        }
+        if (!changed) return;
+
+        const savedPage = state.page;
+        applyFilters();
+        state.page = Math.min(
+          savedPage,
+          Math.max(1, Math.ceil(state.filteredProducts.length / CONFIG.ITEMS_PER_PAGE))
+        );
+        render();
+
+        if (Array.isArray(state.homeProducts) && state.homeProducts.length > 0) {
+          const depr = (p) => (p.category === "UNAVAILABLE" || p.isOutOfStock ? 1 : 0);
+          state.homeProducts = [...state.homeProducts].sort((a, b) => depr(a) - depr(b));
+          renderHome();
+        }
+
+        if (opts.final === false) return;
+
+        const h = String(location.hash ?? "");
+        if (h.startsWith("#product=")) {
+          showProductView(decodeURIComponent(h.slice("#product=".length)));
+        }
+        if (typeof renderCart === "function") renderCart();
+      }
 
       async function syncLiveStock() {
-        const url = CONFIG.LIVE_STOCK_URL;
-        if (!url || !Array.isArray(state.allProducts) || state.allProducts.length === 0) return;
+        if (liveStockBusy || !Array.isArray(state.allProducts) || state.allProducts.length === 0) return;
+        if (typeof document !== "undefined" && document.hidden) return;
+        liveStockBusy = true;
         try {
-          const res = await fetch(`${url}${url.includes("?") ? "&" : "?"}_=${Date.now()}`, { cache: "no-store" });
-          if (!res.ok) throw new Error(String(res.status));
-          const data = await res.json();
-          const raw =
-            data && typeof data === "object" && data.items && typeof data.items === "object" ? data.items : data;
-          if (!raw || typeof raw !== "object") throw new Error("bad payload");
-
-          const map = new Map();
-          for (const [k, v] of Object.entries(raw)) {
-            let inStock = null;
-            if (typeof v === "boolean") inStock = v;
-            else if (typeof v === "number") inStock = v !== 0;
-            else if (v && typeof v === "object") {
-              const x = v.in_stock ?? v.is_in_stock ?? v.available;
-              if (typeof x === "boolean") inStock = x;
-            }
-            if (typeof inStock === "boolean") map.set(normalizeStockSku(k), inStock);
+          // 1) رابط مختصر اختياري (إن وُجد يعيد كل الحالة بطلب واحد)
+          if (CONFIG.LIVE_STOCK_URL) {
+            try {
+              const res = await fetch(`${CONFIG.LIVE_STOCK_URL}${CONFIG.LIVE_STOCK_URL.includes("?") ? "&" : "?"}_=${Date.now()}`, { cache: "no-store" });
+              if (res.ok) {
+                const data = await res.json();
+                const raw = data && typeof data === "object" && data.items ? data.items : data;
+                const map = {};
+                if (raw && typeof raw === "object") {
+                  for (const [k, v] of Object.entries(raw)) {
+                    const sku = normalizeStockSku(k);
+                    if (!sku) continue;
+                    if (typeof v === "boolean") map[sku] = v;
+                    else if (v && typeof v === "object" && typeof (v.in_stock ?? v.is_in_stock) === "boolean") {
+                      map[sku] = v.in_stock ?? v.is_in_stock;
+                    }
+                  }
+                }
+                if (Object.keys(map).length > 0) {
+                  liveStockFailures = 0;
+                  writeStockCache(map);
+                  applyStockMap(map);
+                  return;
+                }
+              }
+            } catch {}
           }
-          if (map.size === 0) throw new Error("empty map");
 
+          // 2) القراءة المباشرة من المتجر عبر JSONP
+          const map = await fetchStoreStockMap((partial) => applyStockMap(partial, { final: false }));
+          if (!map) throw new Error("stock fetch failed");
           liveStockFailures = 0;
-          let changed = false;
-          for (const p of state.allProducts) {
-            const v = map.get(normalizeStockSku(p.key));
-            if (typeof v !== "boolean") continue;
-            const oos = !v;
-            if (p.isOutOfStock !== oos) {
-              p.isOutOfStock = oos;
-              changed = true;
-            }
-          }
-          if (!changed && liveStockApplied) return;
-          liveStockApplied = true;
-
-          const savedPage = state.page;
-          applyFilters();
-          state.page = Math.min(savedPage, Math.max(1, Math.ceil(state.filteredProducts.length / CONFIG.ITEMS_PER_PAGE)));
-          render();
-
-          if (Array.isArray(state.homeProducts) && state.homeProducts.length > 0) {
-            const depr = (p) => (p.category === "UNAVAILABLE" || p.isOutOfStock ? 1 : 0);
-            state.homeProducts = [...state.homeProducts].sort((a, b) => depr(a) - depr(b));
-            renderHome();
-          }
-
-          const h = String(location.hash ?? "");
-          if (h.startsWith("#product=")) {
-            showProductView(decodeURIComponent(h.slice("#product=".length)));
-          }
-          if (typeof renderCart === "function") renderCart();
+          writeStockCache(map);
+          applyStockMap(map);
         } catch (e) {
           liveStockFailures += 1;
           if (liveStockFailures >= 2 && liveStockTimer) {
             clearInterval(liveStockTimer);
             liveStockTimer = null;
           }
+        } finally {
+          liveStockBusy = false;
         }
       }
 
       function startLiveStockSync() {
-        syncLiveStock();
-        if (liveStockTimer) return;
-        if (Number(CONFIG.LIVE_STOCK_REFRESH_MS) > 0) {
-          liveStockTimer = setInterval(syncLiveStock, Number(CONFIG.LIVE_STOCK_REFRESH_MS));
-        }
+        // اعرض آخر حالة محفوظة فوراً (تحديث فوري بدون انتظار)
+        const cached = readStockCache();
+        if (cached && cached.map) applyStockMap(cached.map);
+
+        const ttl = Number(CONFIG.LIVE_STOCK_REFRESH_MS) || 0;
+        const fresh = cached && cached.t && Date.now() - Number(cached.t) < ttl;
+        if (!fresh) syncLiveStock();
+        if (liveStockTimer || ttl <= 0) return;
+        liveStockTimer = setInterval(syncLiveStock, ttl);
       }
 
       function renderHome() {
